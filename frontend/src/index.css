@@ -1,0 +1,15 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #10b981; /* Verde esmeralda para el sector gasolinero */
+  --color-primary-dark: #059669;
+  --color-secondary: #0f172a; /* Slate 900 oscuro para contraste y sidebar */
+  --color-background: #f8fafc; /* Slate 50 para el fondo */
+  --color-surface: #ffffff;
+}
+
+@layer base {
+  body {
+    @apply bg-[var(--color-background)] text-slate-800 antialiased font-sans;
+  }
+}
