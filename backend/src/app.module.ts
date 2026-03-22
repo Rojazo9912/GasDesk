@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { TenantsModule } from './tenants/tenants.module';
@@ -15,10 +13,6 @@ import { BullModule } from '@nestjs/bull';
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '..', 'public'),
-      exclude: ['/api*'],
-    }),
     PrismaModule,
     AuthModule,
     TenantsModule,
