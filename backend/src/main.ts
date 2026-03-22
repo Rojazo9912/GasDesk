@@ -14,9 +14,10 @@ async function bootstrap() {
     }),
   );
 
-  // CORS para el frontend (Admite dominios dinámicos generados por Vercel)
+  // CORS para el frontend (Asterisco para máximo acceso público en Vercel)
   app.enableCors({
-    origin: true,
+    origin: '*',
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
 
