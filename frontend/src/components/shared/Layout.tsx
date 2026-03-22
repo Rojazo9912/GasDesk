@@ -11,8 +11,8 @@ const Layout = () => {
 
   const menuItems = [
     { label: 'Dashboard', path: '/' },
-    { label: 'Solicitudes de Compra', path: '/sc' },
-    { label: 'Órdenes de Compra', path: '/oc' },
+    { label: 'Solicitudes de Compra', path: '/solicitudes' },
+    { label: 'Órdenes de Compra', path: '/ordenes' },
     { label: 'Inventario', path: '/inventario' },
     { label: 'Configuración', path: '/configuracion' },
   ];

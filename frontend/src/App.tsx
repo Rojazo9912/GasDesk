@@ -8,6 +8,15 @@ import EmpresaSettings from './pages/configuracion/EmpresaSettings';
 import SucursalesList from './pages/configuracion/SucursalesList';
 import UsuariosList from './pages/configuracion/UsuariosList';
 import FlujoAprobacion from './pages/configuracion/FlujoAprobacion';
+import ProveedoresList from './pages/configuracion/ProveedoresList';
+
+import ListaSolicitudes from './pages/solicitudes/ListaSolicitudes';
+import CrearSolicitud from './pages/solicitudes/CrearSolicitud';
+import DetalleSolicitud from './pages/solicitudes/DetalleSolicitud';
+
+import ListaOrdenes from './pages/ordenes/ListaOrdenes';
+import NuevaOrden from './pages/ordenes/NuevaOrden';
+import DetalleOrden from './pages/ordenes/DetalleOrden';
 
 function App() {
   return (
@@ -18,9 +27,16 @@ function App() {
         {/* Rutas Protegidas por Layout */}
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
-          <Route path="/sc" element={<div className="p-4">Lista de Solicitudes de Compra</div>} />
-          <Route path="/oc" element={<div className="p-4">Órdenes de Compra</div>} />
-          <Route path="/inventario" element={<div className="p-4">Inventario Actual</div>} />
+          
+          <Route path="solicitudes" element={<ListaSolicitudes />} />
+          <Route path="solicitudes/nueva" element={<CrearSolicitud />} />
+          <Route path="solicitudes/:id" element={<DetalleSolicitud />} />
+
+          <Route path="ordenes" element={<ListaOrdenes />} />
+          <Route path="ordenes/nueva/:scId" element={<NuevaOrden />} />
+          <Route path="ordenes/:id" element={<DetalleOrden />} />
+
+          <Route path="inventario" element={<div className="p-4">Inventario Actual</div>} />
           
           <Route path="/configuracion" element={<ConfiguracionLayout />}>
             <Route index element={<Navigate to="empresa" replace />} />
@@ -28,6 +44,7 @@ function App() {
             <Route path="sucursales" element={<SucursalesList />} />
             <Route path="usuarios" element={<UsuariosList />} />
             <Route path="flujos" element={<FlujoAprobacion />} />
+            <Route path="proveedores" element={<ProveedoresList />} />
           </Route>
         </Route>
       </Routes>
