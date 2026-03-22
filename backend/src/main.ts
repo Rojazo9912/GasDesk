@@ -14,9 +14,11 @@ async function bootstrap() {
     }),
   );
 
-  // CORS para el frontend (Asterisco para máximo acceso público en Vercel)
+  // CORS hiper-dinámico: aprueba todo origen entrante automáticamente
   app.enableCors({
-    origin: '*',
+    origin: (origin, callback) => {
+      callback(null, true);
+    },
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });
@@ -27,5 +29,6 @@ async function bootstrap() {
   const port = process.env.PORT || 3000;
   await app.listen(port, '0.0.0.0');
   console.log(`🚀 GasDesk API corriendo en: Puerto ${port} (0.0.0.0)/api`);
+  console.log(`[!] CORS DINAMICO ACTIVADO CORRECTAMENTE EN PRODUCCIÓN [!]`);
 }
 bootstrap();
