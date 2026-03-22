@@ -7,6 +7,7 @@ import ConfiguracionLayout from './pages/configuracion/ConfiguracionLayout';
 import EmpresaSettings from './pages/configuracion/EmpresaSettings';
 import SucursalesList from './pages/configuracion/SucursalesList';
 import UsuariosList from './pages/configuracion/UsuariosList';
+import FlujoAprobacion from './pages/configuracion/FlujoAprobacion';
 
 function App() {
   return (
@@ -26,6 +27,7 @@ function App() {
             <Route path="empresa" element={<EmpresaSettings />} />
             <Route path="sucursales" element={<SucursalesList />} />
             <Route path="usuarios" element={<UsuariosList />} />
+            <Route path="flujos" element={<FlujoAprobacion />} />
           </Route>
         </Route>
       </Routes>

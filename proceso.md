@@ -70,13 +70,13 @@
 ## Semana 3 — Motor de aprobaciones
 
 ### Backend
-- ⏳ Módulo `approval-flows` — CRUD de niveles
-- ⏳ Endpoint para reordenar niveles (drag & drop)
-- ⏳ Validación: el nivel 5 (Compras) siempre es el último
+- ✅ Módulo `approval-flows` — CRUD de niveles
+- ✅ Endpoint para reordenar niveles (drag & drop)
+- ✅ Validación: el nivel 5 (Compras) siempre es el último
 
 ### Frontend
-- ⏳ Pantalla: **Configurador de flujo** con drag & drop (dnd-kit)
-- ⏳ CRUD visual de niveles (agregar, editar, desactivar)
+- ✅ Pantalla: **Configurador de flujo** con drag & drop (dnd-kit)
+- ✅ CRUD visual de niveles (agregar, editar, desactivar)
 
 ---
 
