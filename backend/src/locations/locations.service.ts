@@ -21,7 +21,10 @@ export class LocationsService {
   }
 
   async findAll(tenantId?: string) {
-    const whereClause = tenantId ? { tenantId } : {};
+    const whereClause: any = { activo: true };
+    if (tenantId) {
+      whereClause.tenantId = tenantId;
+    }
     return this.prisma.location.findMany({
       where: whereClause,
       orderBy: { nombre: 'asc' },
@@ -56,9 +59,10 @@ export class LocationsService {
   async remove(id: string, tenantId?: string) {
     await this.findOne(id, tenantId);
     
-    // Eliminación física (se podría cambiar a soft delete agregando 'activo' al modelo)
-    return this.prisma.location.delete({
+    // Soft delete actualizando 'activo'
+    return this.prisma.location.update({
       where: { id },
+      data: { activo: false },
     });
   }
 }

@@ -110,6 +110,7 @@ model Location {
   nombre    String
   tipo      String // "estacion" | "almacen" | "bodega"
   direccion String?
+  activo    Boolean @default(true)
 
   tenant      Tenant            @relation(fields: [tenantId], references: [id])
   inventarios Inventory[]

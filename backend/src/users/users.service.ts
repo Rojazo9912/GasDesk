@@ -4,9 +4,12 @@ import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import * as bcrypt from 'bcrypt';
 import { Rol } from '@prisma/client';
+import { Resend } from 'resend';
 
 @Injectable()
 export class UsersService {
+  private readonly resend = new Resend(process.env.RESEND_API_KEY);
+
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createUserDto: CreateUserDto, currentUserId: string, currentUserRole: Rol, currentUserTenantId: string, requestedTenantId?: string) {
@@ -39,6 +42,25 @@ export class UsersService {
         tenantId: targetTenantId,
       },
     });
+
+    const fromEmail = process.env.RESEND_FROM || 'onboarding@resend.dev';
+    
+    // Enviar correo de invitación
+    try {
+      await this.resend.emails.send({
+        from: `GasDesk <${fromEmail}>`,
+        to: user.email,
+        subject: 'Invitación a GasDesk',
+        html: `
+          <h2>¡Bienvenido a GasDesk!</h2>
+          <p>Hola ${user.nombre}, has sido inviado a unirte a la plataforma.</p>
+          <p>Tu contraseña temporal es: <strong>${createUserDto.password}</strong></p>
+          <p>Por favor, usa esta contraseña para iniciar sesión y asegúrate de cambiarla posteriormente.</p>
+        `,
+      });
+    } catch (e) {
+      console.error('Error al enviar correo de invitación:', e);
+    }
 
     // Excluir la contraseña al retornar
     const { password, ...result } = user;

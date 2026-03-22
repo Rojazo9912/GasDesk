@@ -56,14 +56,14 @@
 ## Semana 2 — Configuración de empresa
 
 ### Backend
-- ⏳ Módulo completo de Usuarios con invitación por correo
-- ⏳ Módulo Locations completo
-- ⏳ Módulo Products (catálogo por tenant)
+- ✅ Módulo completo de Usuarios con invitación por correo
+- ✅ Módulo Locations completo
+- ✅ Módulo Products (catálogo por tenant)
 
 ### Frontend
-- ⏳ Pantalla: **Mi empresa** (datos + logo)
-- ⏳ Pantalla: **Sucursales / Estaciones**
-- ⏳ Pantalla: **Usuarios y roles**
+- ✅ Pantalla: **Mi empresa** (datos + logo)
+- ✅ Pantalla: **Sucursales / Estaciones**
+- ✅ Pantalla: **Usuarios y roles**
 
 ---
 
