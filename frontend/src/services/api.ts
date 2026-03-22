@@ -18,10 +18,12 @@ api.interceptors.request.use((config) => {
 });
 
 // Interceptor para manejar errores 401 (token expirado o inválido)
+// Excluir /auth/login para no recargar la página cuando las credenciales son incorrectas
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+    if (error.response?.status === 401 && !isLoginRequest) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
       window.location.href = '/login';
