@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npm install @nestjs/serve-static)"
+      "Bash(npm install @nestjs/serve-static)",
+      "Bash(npm install)"
     ]
   }
 }
