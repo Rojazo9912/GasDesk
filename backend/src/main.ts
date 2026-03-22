@@ -14,9 +14,9 @@ async function bootstrap() {
     }),
   );
 
-  // CORS para el frontend
+  // CORS para el frontend (Admite dominios dinámicos generados por Vercel)
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:5173',
+    origin: true,
     credentials: true,
   });
 
