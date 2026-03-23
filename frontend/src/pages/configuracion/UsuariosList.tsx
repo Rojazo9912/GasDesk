@@ -7,13 +7,14 @@ const UsuariosList = () => {
   const [users, setUsers] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // From state
+
+  // Form state
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [rol, setRol] = useState('SOLICITANTE');
-  const [inviting, setInviting] = useState(false);
+  const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<{ id: string; email: string } | null>(null);
 
   const fetchUsers = async () => {
@@ -34,23 +35,24 @@ const UsuariosList = () => {
   const handleOpenModal = () => {
     setNombre('');
     setEmail('');
-    setPassword(Math.random().toString(36).slice(-8)); // auto-generate temp pass
+    setPassword('');
+    setShowPassword(false);
     setRol('SOLICITANTE');
     setIsModalOpen(true);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setInviting(true);
+    setSaving(true);
     try {
       await inviteUser({ nombre, email, password, rol });
+      toast.success(`Usuario ${nombre} creado correctamente`);
       setIsModalOpen(false);
       fetchUsers();
     } catch (error: any) {
-      console.error('Error inviting user', error);
-      toast.error(error.response?.data?.message || 'Error al invitar al usuario');
+      toast.error(error.response?.data?.message || 'Error al crear el usuario');
     } finally {
-      setInviting(false);
+      setSaving(false);
     }
   };
 
@@ -73,11 +75,11 @@ const UsuariosList = () => {
           <h2 className="text-lg font-semibold text-slate-800">Usuarios y Roles</h2>
           <p className="text-sm text-slate-500">Administra el acceso de tu equipo a la plataforma.</p>
         </div>
-        <button 
+        <button
           onClick={handleOpenModal}
           className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
         >
-          Invitar Usuario
+          + Nuevo Usuario
         </button>
       </div>
 
@@ -120,7 +122,7 @@ const UsuariosList = () => {
                   </td>
                   <td className="p-4 text-right space-x-2">
                     {u.activo && (
-                      <button 
+                      <button
                         onClick={() => handleDelete(u.id, u.email)}
                         className="text-rose-500 hover:text-rose-700 transition-colors"
                       >
@@ -137,28 +139,65 @@ const UsuariosList = () => {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 animate-in fade-in zoom-in duration-200">
-            <h3 className="text-lg font-bold text-slate-800 mb-4">Invitar Nuevo Usuario</h3>
+          <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+            <h3 className="text-lg font-bold text-slate-800 mb-4">Nuevo Usuario</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
-                <input 
-                  type="text" 
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo *</label>
+                <input
+                  type="text"
                   value={nombre}
                   onChange={(e) => setNombre(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  placeholder="Nombre del usuario"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
-                <input 
-                  type="email" 
+                <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico *</label>
+                <input
+                  type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500"
+                  className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  placeholder="usuario@empresa.com"
                 />
+              </div>
+              <div>
+                <div className="flex justify-between items-center mb-1">
+                  <label className="block text-sm font-medium text-slate-700">Contraseña * (mín. 8 caracteres)</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789@#$!';
+                      const pwd = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+                      setPassword(pwd);
+                      setShowPassword(true);
+                    }}
+                    className="text-xs text-emerald-600 hover:text-emerald-800 font-medium"
+                  >
+                    Generar contraseña
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    minLength={8}
+                    className="w-full px-3 py-2 pr-16 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                    placeholder="••••••••"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(v => !v)}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs"
+                  >
+                    {showPassword ? 'Ocultar' : 'Mostrar'}
+                  </button>
+                </div>
               </div>
               <div>
                 <label className="block text-sm font-medium text-slate-700 mb-1">Rol</label>
@@ -175,31 +214,28 @@ const UsuariosList = () => {
                   <option value="SOLICITANTE">Solicitante (Sólo puede pedir)</option>
                 </select>
               </div>
-              <div className="bg-sky-50 text-sky-800 p-3 rounded-md text-xs border border-sky-100 flex gap-2">
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 shrink-0 mt-0.5 text-sky-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                <p>Se enviará un correo a este usuario con su contraseña temporal generada automáticamente.</p>
-              </div>
               <div className="pt-4 flex justify-end gap-3 border-t border-slate-100">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
-                  disabled={inviting}
-                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-md font-medium transition-colors"
+                  disabled={saving}
+                  className="px-4 py-2 text-slate-600 hover:bg-slate-100 rounded-md font-medium transition-colors text-sm"
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="submit" 
-                  disabled={inviting}
-                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-medium transition-colors disabled:opacity-50"
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-md font-medium transition-colors disabled:opacity-50 text-sm"
                 >
-                  {inviting ? 'Enviando...' : 'Enviar Invitación'}
+                  {saving ? 'Creando...' : 'Crear Usuario'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
       {pendingDelete && (
         <ConfirmModal
           title="¿Desactivar usuario?"
