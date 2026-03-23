@@ -127,15 +127,16 @@
 ## Semana 7 — Inventario
 
 ### Backend
-- ⏳ Módulo `receptions` — registrar recepción física
-- ⏳ Módulo `inventory` — stock por producto/sucursal
-- ⏳ Trigger automático: recepción confirmada → suma al inventario
-- ⏳ Alerta por stock mínimo (correo + notificación en app)
+- ✅ Módulo `receptions` — POST /receptions, GET /receptions/orden/:id
+- ✅ Módulo `inventory` — GET /inventory (stock), GET /inventory/movements, POST /inventory/adjust
+- ✅ Trigger automático: recepción confirmada → upsert Inventory + InventoryMovement (ENTRADA)
+- ✅ Alerta por stock mínimo en app (badge color + panel de alertas en StockActual)
 
 ### Frontend
-- ⏳ Pantalla: **Stock actual** (por sucursal, con alertas)
-- ⏳ Pantalla: **Catálogo de productos**
-- ⏳ Pantalla: **Historial de movimientos**
+- ✅ Pantalla: **Stock actual** (por sucursal, alertas stock bajo/agotado)
+- ✅ Pantalla: **Catálogo de productos** (CRUD completo con stockMinimo)
+- ✅ Pantalla: **Historial de movimientos** (filtro por sucursal)
+- ✅ Sección **Recepción de Mercancía** en Detalle OC (form + historial de recepciones)
 
 ---
 

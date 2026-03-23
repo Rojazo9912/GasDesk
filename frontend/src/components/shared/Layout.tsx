@@ -33,7 +33,7 @@ const Layout = () => {
               key={item.path}
               to={item.path}
               className={`px-4 py-2 rounded-md transition-colors ${
-                location.pathname === item.path
+                (item.path === '/' ? location.pathname === '/' : location.pathname.startsWith(item.path))
                   ? 'bg-emerald-600 text-white shadow-sm'
                   : 'text-slate-300 hover:bg-slate-800 hover:text-white'
               }`}
