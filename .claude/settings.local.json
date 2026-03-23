@@ -7,7 +7,10 @@
       "Bash(npx prisma db push)",
       "Bash(xargs grep -l \"Invoice\\\\|invoice\\\\|factura\")",
       "Bash(npm install react-hot-toast)",
-      "Bash(npx tsc --noEmit)"
+      "Bash(npx tsc --noEmit)",
+      "Bash(npm audit --audit-level=high)",
+      "Bash(npm audit --audit-level=moderate)",
+      "Bash(npm audit fix --dry-run)"
     ]
   }
 }
