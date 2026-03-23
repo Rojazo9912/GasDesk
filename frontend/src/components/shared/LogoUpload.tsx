@@ -32,6 +32,12 @@ const LogoUpload = ({ tenantId, currentLogo, onUpload }: LogoUploadProps) => {
 
     setUploading(true);
     try {
+      if (!supabase) {
+        toast.error('Almacenamiento no configurado (VITE_SUPABASE_URL/KEY)');
+        setPreview(currentLogo || null);
+        return;
+      }
+
       const ext = file.name.split('.').pop() ?? 'png';
       const path = `${tenantId}/${Date.now()}.${ext}`;
 

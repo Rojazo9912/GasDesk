@@ -67,7 +67,7 @@ const EmpresasAdmin = () => {
       });
 
       // Upload logo if selected
-      if (logoFile && result.id) {
+      if (logoFile && result.id && supabase) {
         const ext = logoFile.name.split('.').pop() ?? 'png';
         const path = `${result.id}/${Date.now()}.${ext}`;
         const { error } = await supabase.storage.from('logos').upload(path, logoFile, { upsert: true, contentType: logoFile.type });
