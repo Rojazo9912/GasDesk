@@ -18,6 +18,11 @@ import ListaOrdenes from './pages/ordenes/ListaOrdenes';
 import NuevaOrden from './pages/ordenes/NuevaOrden';
 import DetalleOrden from './pages/ordenes/DetalleOrden';
 
+import InventarioLayout from './pages/inventario/InventarioLayout';
+import StockActual from './pages/inventario/StockActual';
+import Movimientos from './pages/inventario/Movimientos';
+import CatalogoProductos from './pages/inventario/CatalogoProductos';
+
 function App() {
   return (
     <AuthProvider>
@@ -36,7 +41,12 @@ function App() {
           <Route path="ordenes/nueva/:scId" element={<NuevaOrden />} />
           <Route path="ordenes/:id" element={<DetalleOrden />} />
 
-          <Route path="inventario" element={<div className="p-4">Inventario Actual</div>} />
+          <Route path="inventario" element={<InventarioLayout />}>
+            <Route index element={<Navigate to="stock" replace />} />
+            <Route path="stock" element={<StockActual />} />
+            <Route path="movimientos" element={<Movimientos />} />
+            <Route path="productos" element={<CatalogoProductos />} />
+          </Route>
           
           <Route path="/configuracion" element={<ConfiguracionLayout />}>
             <Route index element={<Navigate to="empresa" replace />} />

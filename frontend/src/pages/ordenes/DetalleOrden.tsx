@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPurchaseOrderById, sendPurchaseOrderEmail } from '../../services/purchase-orders.service';
 import { getInvoiceByOrden, createInvoice } from '../../services/invoices.service';
+import { getReceptionsByOrden, createReception } from '../../services/receptions.service';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -66,6 +67,13 @@ const DetalleOrden = () => {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
+  // Reception state
+  const [recepciones, setRecepciones] = useState<any[]>([]);
+  const [showRecepcionForm, setShowRecepcionForm] = useState(false);
+  const [savingRecepcion, setSavingRecepcion] = useState(false);
+  const [recepcionItems, setRecepcionItems] = useState<{ productId: string; cantidadRecibida: number; notas: string }[]>([]);
+  const [recepcionNotas, setRecepcionNotas] = useState('');
+
   // CFDI state
   const [factura, setFactura] = useState<any>(null);
   const [cfdiData, setCfdiData] = useState<CfdiData | null>(null);
@@ -77,12 +85,14 @@ const DetalleOrden = () => {
   const fetchData = async () => {
     try {
       if (id) {
-        const [ocData, facturaData] = await Promise.all([
+        const [ocData, facturaData, recepcionesData] = await Promise.all([
           getPurchaseOrderById(id),
           getInvoiceByOrden(id).catch(() => null),
+          getReceptionsByOrden(id).catch(() => []),
         ]);
         setOc(ocData);
         setFactura(facturaData);
+        setRecepciones(recepcionesData);
       }
     } catch (error) {
       console.error(error);
@@ -154,6 +164,36 @@ const DetalleOrden = () => {
       alert(err.response?.data?.message || 'Error al registrar CFDI');
     } finally {
       setSavingCfdi(false);
+    }
+  };
+
+  const openRecepcionForm = () => {
+    setRecepcionItems(
+      (oc?.items ?? []).map((item: any) => ({
+        productId: item.productId,
+        cantidadRecibida: item.cantidadOrdenada,
+        notas: '',
+      })),
+    );
+    setRecepcionNotas('');
+    setShowRecepcionForm(true);
+  };
+
+  const handleSubmitRecepcion = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setSavingRecepcion(true);
+    try {
+      await createReception({
+        ordenId: id!,
+        notas: recepcionNotas || undefined,
+        items: recepcionItems.filter(i => i.cantidadRecibida > 0),
+      });
+      setShowRecepcionForm(false);
+      fetchData();
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al registrar recepción');
+    } finally {
+      setSavingRecepcion(false);
     }
   };
 
@@ -416,6 +456,137 @@ const DetalleOrden = () => {
           {!factura && !showCfdiForm && (
             <div className="px-6 py-8 text-center text-slate-400 text-sm">
               Sube el XML del CFDI una vez que el proveedor entregue la factura.
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ─── Sección Recepción de Mercancía ────────────────────────────── */}
+      {oc.estatus !== 'BORRADOR' && (
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm print:hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h2 className="text-base font-bold text-slate-800">Recepción de Mercancía</h2>
+            {!showRecepcionForm && oc.estatus !== 'COMPLETADA' && (
+              <button
+                onClick={openRecepcionForm}
+                className="text-sm bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded font-medium transition"
+              >
+                + Registrar Recepción
+              </button>
+            )}
+          </div>
+
+          {/* Recepciones existentes */}
+          {recepciones.length > 0 && (
+            <div className="p-6 space-y-4">
+              {recepciones.map((r: any) => (
+                <div key={r.id} className="border border-slate-200 rounded-lg p-4">
+                  <div className="flex justify-between items-center mb-3">
+                    <div className="text-sm font-semibold text-slate-700">
+                      Recibido el {new Date(r.fecha).toLocaleDateString('es-MX', { day: '2-digit', month: 'short', year: 'numeric' })}
+                    </div>
+                    <div className="text-xs text-slate-400">Almacenista: {r.almacenista?.nombre}</div>
+                  </div>
+                  <table className="w-full text-xs">
+                    <thead>
+                      <tr className="text-slate-400 uppercase border-b border-slate-100">
+                        <th className="py-1 text-left font-medium">Producto</th>
+                        <th className="py-1 text-right font-medium">Cantidad Recibida</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {r.items?.map((item: any) => (
+                        <tr key={item.id} className="border-b border-slate-50 last:border-0">
+                          <td className="py-1.5 text-slate-700">{item.product?.nombre}</td>
+                          <td className="py-1.5 text-right font-semibold text-slate-800">
+                            {item.cantidadRecibida} <span className="font-normal text-slate-400">{item.product?.unidad}</span>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {r.notas && <p className="mt-2 text-xs text-slate-400">Nota: {r.notas}</p>}
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Formulario de recepción */}
+          {showRecepcionForm && (
+            <form onSubmit={handleSubmitRecepcion} className="p-6 space-y-5">
+              <p className="text-sm text-slate-500">Ingresa las cantidades físicamente recibidas. Se actualizará el inventario automáticamente.</p>
+              <div className="border border-slate-200 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead className="bg-slate-50 border-b border-slate-200">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-slate-500 uppercase">Producto</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Cant. Ordenada</th>
+                      <th className="px-4 py-3 text-center text-xs font-medium text-slate-500 uppercase">Cant. Recibida</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {recepcionItems.map((item, idx) => {
+                      const ocItem = oc.items?.find((i: any) => i.productId === item.productId);
+                      return (
+                        <tr key={item.productId} className="border-b border-slate-100 last:border-0">
+                          <td className="px-4 py-3 font-medium text-slate-800">{ocItem?.product?.nombre}</td>
+                          <td className="px-4 py-3 text-center text-slate-500">
+                            {ocItem?.cantidadOrdenada} <span className="text-xs">{ocItem?.product?.unidad}</span>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <input
+                              type="number"
+                              min="0"
+                              step="any"
+                              required
+                              value={item.cantidadRecibida}
+                              onChange={e => {
+                                const updated = [...recepcionItems];
+                                updated[idx] = { ...updated[idx], cantidadRecibida: Number(e.target.value) };
+                                setRecepcionItems(updated);
+                              }}
+                              className="w-24 border border-slate-300 rounded px-2 py-1 text-sm text-center focus:ring-emerald-500 focus:border-emerald-500 outline-none"
+                            />
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Notas de recepción</label>
+                <input
+                  type="text"
+                  value={recepcionNotas}
+                  onChange={e => setRecepcionNotas(e.target.value)}
+                  placeholder="Ej: Producto con empaque dañado, entregado incompleto..."
+                  className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => setShowRecepcionForm(false)}
+                  className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingRecepcion}
+                  className="px-5 py-2 bg-slate-800 hover:bg-slate-900 text-white text-sm font-semibold rounded disabled:opacity-50"
+                >
+                  {savingRecepcion ? 'Guardando...' : 'Confirmar Recepción'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Placeholder */}
+          {recepciones.length === 0 && !showRecepcionForm && (
+            <div className="px-6 py-8 text-center text-slate-400 text-sm">
+              Sin recepciones registradas aún.
             </div>
           )}
         </div>
