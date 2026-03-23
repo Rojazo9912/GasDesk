@@ -14,6 +14,7 @@ const Layout = () => {
     { label: 'Solicitudes de Compra', path: '/solicitudes' },
     { label: 'Órdenes de Compra', path: '/ordenes' },
     { label: 'Inventario', path: '/inventario' },
+    { label: 'Reportes', path: '/reportes' },
     { label: 'Configuración', path: '/configuracion' },
   ];
 

@@ -12,6 +12,7 @@ import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
 import { InvoicesModule } from './invoices/invoices.module';
 import { ReceptionsModule } from './receptions/receptions.module';
 import { InventoryModule } from './inventory/inventory.module';
+import { ReportsModule } from './reports/reports.module';
 import { BullModule } from '@nestjs/bull';
 
 @Module({
@@ -29,6 +30,7 @@ import { BullModule } from '@nestjs/bull';
     InvoicesModule,
     ReceptionsModule,
     InventoryModule,
+    ReportsModule,
     ...(process.env.REDIS_URL ? [BullModule.forRoot({ redis: process.env.REDIS_URL })] : [])
   ],
   controllers: [],

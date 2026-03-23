@@ -143,14 +143,15 @@
 ## Semana 8 — Proveedores y Reportes
 
 ### Backend
-- ⏳ Módulo `suppliers` — CRUD completo
-- ⏳ Módulo `reports` — consultas agregadas
-- ⏳ Exportar a Excel (xlsx)
+- ✅ Módulo `suppliers` — CRUD completo
+- ✅ Módulo `reports` — consultas agregadas (dashboard, gastos/proveedor, SC por estatus, OC recientes)
+- ✅ Exportar a CSV (client-side, sin dependencias extra)
 
 ### Frontend
-- ⏳ Pantalla: **Lista de proveedores**
-- ⏳ Pantalla: **Alta / edición de proveedor**
-- ⏳ Pantalla: **Reportes + Dashboard con métricas**
+- ✅ Pantalla: **Lista de proveedores**
+- ✅ Pantalla: **Alta / edición de proveedor** (modal con create + edit)
+- ✅ Pantalla: **Reportes** (3 tabs: gastos/proveedor, SC por estatus, OC recientes + export CSV)
+- ✅ **Dashboard** actualizado con métricas reales desde backend
 
 ---
 
