@@ -15,6 +15,7 @@ const Layout = () => {
     { label: 'Órdenes de Compra', path: '/ordenes' },
     { label: 'Inventario', path: '/inventario' },
     { label: 'Reportes', path: '/reportes' },
+    ...(user?.rol === 'SUPER_ADMIN' ? [{ label: 'Empresas', path: '/admin/empresas' }] : []),
     { label: 'Configuración', path: '/configuracion' },
   ];
 

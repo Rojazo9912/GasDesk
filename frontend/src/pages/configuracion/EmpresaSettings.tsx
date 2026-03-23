@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { useAuth } from '../../context/AuthContext';
 import { getTenant, updateTenant } from '../../services/tenants.service';
+import LogoUpload from '../../components/shared/LogoUpload';
 
 const EmpresaSettings = () => {
   const { user } = useAuth();
@@ -46,6 +47,16 @@ const EmpresaSettings = () => {
     }
   };
 
+  const handleLogoUpload = async (url: string) => {
+    if (!user?.tenant?.id) return;
+    try {
+      await updateTenant(user.tenant.id, { logo: url });
+      setTenant((prev: any) => ({ ...prev, logo: url }));
+    } catch (error) {
+      toast.error('Error al guardar el logo');
+    }
+  };
+
   if (loading) return <div className="p-4">Cargando...</div>;
 
   return (
@@ -76,14 +87,14 @@ const EmpresaSettings = () => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-slate-700 mb-1">Logo (URL)</label>
-          <input
-            type="text"
-            value={tenant?.logo || ''}
-            disabled
-            placeholder="Subida de logo temporalmente deshabilitada"
-            className="w-full px-3 py-2 bg-slate-100 border border-slate-300 rounded-md text-slate-500 cursor-not-allowed focus:outline-none"
-          />
+          <label className="block text-sm font-medium text-slate-700 mb-2">Logo de la empresa</label>
+          {user?.tenant?.id && (
+            <LogoUpload
+              tenantId={user.tenant.id}
+              currentLogo={tenant?.logo}
+              onUpload={handleLogoUpload}
+            />
+          )}
         </div>
 
         <div className="pt-4 border-t border-slate-100">

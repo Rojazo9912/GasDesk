@@ -24,7 +24,9 @@ import InventarioLayout from './pages/inventario/InventarioLayout';
 import StockActual from './pages/inventario/StockActual';
 import Movimientos from './pages/inventario/Movimientos';
 import CatalogoProductos from './pages/inventario/CatalogoProductos';
+import StockDepartamentos from './pages/inventario/StockDepartamentos';
 import Reportes from './pages/Reportes';
+import EmpresasAdmin from './pages/admin/EmpresasAdmin';
 
 function App() {
   return (
@@ -46,12 +48,14 @@ function App() {
           <Route path="ordenes/:id" element={<DetalleOrden />} />
 
           <Route path="reportes" element={<Reportes />} />
+          <Route path="admin/empresas" element={<EmpresasAdmin />} />
 
           <Route path="inventario" element={<InventarioLayout />}>
             <Route index element={<Navigate to="stock" replace />} />
             <Route path="stock" element={<StockActual />} />
             <Route path="movimientos" element={<Movimientos />} />
             <Route path="productos" element={<CatalogoProductos />} />
+            <Route path="departamentos" element={<StockDepartamentos />} />
           </Route>
           
           <Route path="/configuracion" element={<ConfiguracionLayout />}>

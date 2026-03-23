@@ -7,6 +7,7 @@ const InventarioLayout = () => {
     { name: 'Stock Actual', path: '/inventario/stock' },
     { name: 'Historial de Movimientos', path: '/inventario/movimientos' },
     { name: 'Catálogo de Productos', path: '/inventario/productos' },
+    { name: 'Por Departamento', path: '/inventario/departamentos' },
   ];
 
   return (

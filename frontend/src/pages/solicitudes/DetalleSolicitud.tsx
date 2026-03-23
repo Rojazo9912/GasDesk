@@ -112,6 +112,9 @@ const DetalleSolicitud = () => {
       <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center gap-3">
+            {user?.tenant?.logo && (
+              <img src={user.tenant.logo} alt="logo" className="h-10 object-contain max-w-[80px]" />
+            )}
             <h1 className="text-2xl font-bold text-slate-800">SC-{solicitud.id?.slice(0, 8).toUpperCase()}</h1>
             <span className="px-3 py-1 bg-slate-100 text-slate-700 text-sm font-semibold rounded-full border border-slate-200">
               {solicitud.estatus}

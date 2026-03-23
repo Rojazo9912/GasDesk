@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 import { getPurchaseOrderById, sendPurchaseOrderEmail } from '../../services/purchase-orders.service';
 import { getInvoiceByOrden, createInvoice } from '../../services/invoices.service';
@@ -63,6 +64,7 @@ const validacionBadge = (estatus: string) => {
 const DetalleOrden = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const pdfRef = useRef<HTMLDivElement>(null);
 
   const [oc, setOc] = useState<any>(null);
@@ -217,6 +219,9 @@ const DetalleOrden = () => {
       <div className="flex justify-between items-center bg-white p-4 rounded border border-slate-200 shadow-sm">
         <div className="flex items-center gap-4">
           <button onClick={() => navigate('/ordenes')} className="text-slate-400 hover:text-slate-800 font-bold px-2 py-1 rounded hover:bg-slate-100">←</button>
+          {user?.tenant?.logo && (
+            <img src={user.tenant.logo} alt="logo" className="h-10 object-contain max-w-[80px]" />
+          )}
           <h1 className="text-xl font-bold text-slate-800">OC-{oc.folio?.toString().padStart(4, '0') || 'N/A'}</h1>
           <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold uppercase rounded border border-blue-200">
             {oc.estatus.replace(/_/g, ' ')}

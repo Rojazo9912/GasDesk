@@ -74,14 +74,16 @@ model Tenant {
   activo   Boolean  @default(true)
   creadoEn DateTime @default(now())
 
-  usuarios      User[]
-  sucursales    Location[]
-  flujos        ApprovalFlow[]
-  solicitudes   PurchaseRequest[]
-  ordenes       PurchaseOrder[]
-  proveedores   Supplier[]
-  productos     Product[]
-  departamentos Department[]
+  usuarios         User[]
+  sucursales       Location[]
+  flujos           ApprovalFlow[]
+  solicitudes      PurchaseRequest[]
+  ordenes          PurchaseOrder[]
+  proveedores      Supplier[]
+  productos        Product[]
+  departamentos    Department[]
+  deptInventario   DepartmentInventory[]
+  deptMovimientos  DepartmentMovement[]
 }
 
 // ─── Departments ──────────────────────────────────────────────────────────────
@@ -94,7 +96,9 @@ model Department {
   activo      Boolean  @default(true)
   creadoEn    DateTime @default(now())
 
-  tenant Tenant @relation(fields: [tenantId], references: [id])
+  tenant     Tenant                @relation(fields: [tenantId], references: [id])
+  inventario DepartmentInventory[]
+  movimientos DepartmentMovement[]
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────
@@ -180,12 +184,14 @@ model Product {
   stockMinimo Float   @default(0)
   activo      Boolean @default(true)
 
-  tenant         Tenant                @relation(fields: [tenantId], references: [id])
-  inventarios    Inventory[]
-  scItems        PurchaseRequestItem[]
-  ocItems        PurchaseOrderItem[]
-  movimientos    InventoryMovement[]
-  recepcionItems ReceptionItem[]
+  tenant          Tenant                @relation(fields: [tenantId], references: [id])
+  inventarios     Inventory[]
+  scItems         PurchaseRequestItem[]
+  ocItems         PurchaseOrderItem[]
+  movimientos     InventoryMovement[]
+  recepcionItems  ReceptionItem[]
+  deptInventario  DepartmentInventory[]
+  deptMovimientos DepartmentMovement[]
 }
 
 model Inventory {
@@ -350,4 +356,36 @@ model ReceptionItem {
 
   recepcion Reception @relation(fields: [recepcionId], references: [id])
   product   Product   @relation(fields: [productId], references: [id])
+}
+
+// ─── Department Inventory ─────────────────────────────────────────────────────
+
+model DepartmentInventory {
+  id           String @id @default(uuid())
+  tenantId     String
+  departmentId String
+  productId    String
+  cantidad     Float  @default(0)
+  stockMinimo  Float  @default(0)
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  department Department @relation(fields: [departmentId], references: [id])
+  product    Product    @relation(fields: [productId], references: [id])
+
+  @@unique([departmentId, productId])
+}
+
+model DepartmentMovement {
+  id           String         @id @default(uuid())
+  tenantId     String
+  departmentId String
+  productId    String
+  tipo         TipoMovimiento
+  cantidad     Float
+  notas        String?
+  fecha        DateTime       @default(now())
+
+  tenant     Tenant     @relation(fields: [tenantId], references: [id])
+  department Department @relation(fields: [departmentId], references: [id])
+  product    Product    @relation(fields: [productId], references: [id])
 }

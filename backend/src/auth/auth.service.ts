@@ -50,6 +50,7 @@ export class AuthService {
         tenant: {
           id: user.tenant.id,
           nombre: user.tenant.nombre,
+          logo: user.tenant.logo ?? null,
         },
       },
     };

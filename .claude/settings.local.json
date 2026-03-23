@@ -12,7 +12,8 @@
       "Bash(npm audit --audit-level=moderate)",
       "Bash(npm audit fix --dry-run)",
       "Bash(npx prisma migrate dev --name add_departments)",
-      "Bash(npx prisma generate)"
+      "Bash(npx prisma generate)",
+      "Bash(npm install @supabase/supabase-js)"
     ]
   }
 }
