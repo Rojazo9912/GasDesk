@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/shared/Layout';
+import RoleGuard from './components/shared/RoleGuard';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import ConfiguracionLayout from './pages/configuracion/ConfiguracionLayout';
@@ -29,37 +30,61 @@ import StockDepartamentos from './pages/inventario/StockDepartamentos';
 import Reportes from './pages/Reportes';
 import EmpresasAdmin from './pages/admin/EmpresasAdmin';
 
+const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
+const STAFF_ROLES = ['SUPER_ADMIN', 'ADMIN', 'GERENTE', 'COMPRAS', 'CONTRALOR', 'ALMACENISTA'];
+const REPORT_ROLES = ['SUPER_ADMIN', 'ADMIN', 'GERENTE', 'COMPRAS', 'CONTRALOR'];
+
 function App() {
   return (
     <AuthProvider>
       <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
       <Routes>
         <Route path="/login" element={<Login />} />
-        
-        {/* Rutas Protegidas por Layout */}
+
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
-          
+
+          {/* Solicitudes — todos los roles */}
           <Route path="solicitudes" element={<ListaSolicitudes />} />
           <Route path="solicitudes/nueva" element={<CrearSolicitud />} />
           <Route path="solicitudes/:id" element={<DetalleSolicitud />} />
 
-          <Route path="ordenes" element={<ListaOrdenes />} />
-          <Route path="ordenes/nueva/:scId" element={<NuevaOrden />} />
-          <Route path="ordenes/:id" element={<DetalleOrden />} />
+          {/* Órdenes — staff (no solicitante) */}
+          <Route path="ordenes" element={
+            <RoleGuard roles={STAFF_ROLES}><ListaOrdenes /></RoleGuard>
+          } />
+          <Route path="ordenes/nueva/:scId" element={
+            <RoleGuard roles={STAFF_ROLES}><NuevaOrden /></RoleGuard>
+          } />
+          <Route path="ordenes/:id" element={
+            <RoleGuard roles={STAFF_ROLES}><DetalleOrden /></RoleGuard>
+          } />
 
-          <Route path="reportes" element={<Reportes />} />
-          <Route path="admin/empresas" element={<EmpresasAdmin />} />
+          {/* Reportes — gerencia y arriba */}
+          <Route path="reportes" element={
+            <RoleGuard roles={REPORT_ROLES}><Reportes /></RoleGuard>
+          } />
 
-          <Route path="inventario" element={<InventarioLayout />}>
+          {/* Solo SUPER_ADMIN */}
+          <Route path="admin/empresas" element={
+            <RoleGuard roles={['SUPER_ADMIN']}><EmpresasAdmin /></RoleGuard>
+          } />
+
+          {/* Inventario — staff (no solicitante) */}
+          <Route path="inventario" element={
+            <RoleGuard roles={STAFF_ROLES}><InventarioLayout /></RoleGuard>
+          }>
             <Route index element={<Navigate to="stock" replace />} />
             <Route path="stock" element={<StockActual />} />
             <Route path="movimientos" element={<Movimientos />} />
             <Route path="productos" element={<CatalogoProductos />} />
             <Route path="departamentos" element={<StockDepartamentos />} />
           </Route>
-          
-          <Route path="/configuracion" element={<ConfiguracionLayout />}>
+
+          {/* Configuración — solo admins */}
+          <Route path="/configuracion" element={
+            <RoleGuard roles={ADMIN_ROLES}><ConfiguracionLayout /></RoleGuard>
+          }>
             <Route index element={<Navigate to="empresa" replace />} />
             <Route path="empresa" element={<EmpresaSettings />} />
             <Route path="sucursales" element={<SucursalesList />} />

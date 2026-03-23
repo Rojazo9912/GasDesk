@@ -9,15 +9,21 @@ const Layout = () => {
     return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
-  const menuItems = [
-    { label: 'Dashboard', path: '/' },
-    { label: 'Solicitudes de Compra', path: '/solicitudes' },
-    { label: 'Órdenes de Compra', path: '/ordenes' },
-    { label: 'Inventario', path: '/inventario' },
-    { label: 'Reportes', path: '/reportes' },
-    ...(user?.rol === 'SUPER_ADMIN' ? [{ label: 'Empresas', path: '/admin/empresas' }] : []),
-    { label: 'Configuración', path: '/configuracion' },
+  const ALL_ROLES = ['SUPER_ADMIN', 'ADMIN', 'GERENTE', 'COMPRAS', 'CONTRALOR', 'ALMACENISTA', 'SOLICITANTE'];
+  const ADMIN_ROLES = ['SUPER_ADMIN', 'ADMIN'];
+  const STAFF_ROLES = ['SUPER_ADMIN', 'ADMIN', 'GERENTE', 'COMPRAS', 'CONTRALOR', 'ALMACENISTA'];
+
+  const allMenuItems = [
+    { label: 'Dashboard',             path: '/',                roles: ALL_ROLES },
+    { label: 'Solicitudes de Compra', path: '/solicitudes',     roles: ALL_ROLES },
+    { label: 'Órdenes de Compra',     path: '/ordenes',         roles: STAFF_ROLES },
+    { label: 'Inventario',            path: '/inventario',      roles: STAFF_ROLES },
+    { label: 'Reportes',              path: '/reportes',        roles: ['SUPER_ADMIN', 'ADMIN', 'GERENTE', 'COMPRAS', 'CONTRALOR'] },
+    { label: 'Empresas',              path: '/admin/empresas',  roles: ['SUPER_ADMIN'] },
+    { label: 'Configuración',         path: '/configuracion',   roles: ADMIN_ROLES },
   ];
+
+  const menuItems = allMenuItems.filter(item => user?.rol && item.roles.includes(user.rol));
 
   return (
     <div className="min-h-screen flex bg-slate-50">
