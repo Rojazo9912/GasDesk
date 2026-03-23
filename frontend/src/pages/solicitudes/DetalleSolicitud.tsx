@@ -1,7 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { getPurchaseRequestById, approveRequest, rejectRequest, markRequestAsCompleted } from '../../services/purchase-requests.service';
 import { useAuth } from '../../context/AuthContext';
+import ConfirmModal from '../../components/shared/ConfirmModal';
 
 const DetalleSolicitud = () => {
   const { id } = useParams<{ id: string }>();
@@ -13,6 +15,7 @@ const DetalleSolicitud = () => {
   const [processing, setProcessing] = useState(false);
   const [comentario, setComentario] = useState('');
   const [mostrarRechazo, setMostrarRechazo] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; confirmLabel?: string; danger?: boolean; onConfirm: () => void } | null>(null);
 
   const fetchData = async () => {
     try {
@@ -22,7 +25,7 @@ const DetalleSolicitud = () => {
       }
     } catch (error) {
       console.error(error);
-      alert('Error cargando solicitud');
+      toast.error('Error cargando solicitud');
       navigate('/solicitudes');
     } finally {
       setLoading(false);
@@ -33,50 +36,64 @@ const DetalleSolicitud = () => {
     fetchData();
   }, [id]);
 
-  const handleApprove = async () => {
-    if (!confirm('¿Estás seguro de aprobar esta solicitud y mandarla al siguiente nivel?')) return;
-    setProcessing(true);
-    try {
-      await approveRequest(id!, comentario);
-      alert('Solicitud aprobada con éxito');
-      fetchData();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al aprobar');
-    } finally {
-      setProcessing(false);
-    }
+  const handleApprove = () => {
+    setConfirmModal({
+      title: '¿Aprobar solicitud?',
+      message: 'Se enviará al siguiente nivel de aprobación.',
+      confirmLabel: 'Aprobar',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        setProcessing(true);
+        try {
+          await approveRequest(id!, comentario);
+          toast.success('Solicitud aprobada con éxito');
+          fetchData();
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al aprobar');
+        } finally {
+          setProcessing(false);
+        }
+      },
+    });
   };
 
   const handleReject = async () => {
     if (!comentario) {
-      alert('Debes escribir un motivo de rechazo');
+      toast.error('Debes escribir un motivo de rechazo');
       return;
     }
     setProcessing(true);
     try {
       await rejectRequest(id!, comentario);
-      alert('Solicitud rechazada');
+      toast.success('Solicitud rechazada');
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al rechazar');
+      toast.error(error.response?.data?.message || 'Error al rechazar');
     } finally {
       setProcessing(false);
       setMostrarRechazo(false);
     }
   };
 
-  const handleComplete = async () => {
-    if (!confirm('¿Marcar como COMPLETADA? (El material ya fue comprado o procesado)')) return;
-    setProcessing(true);
-    try {
-      await markRequestAsCompleted(id!);
-      alert('Solicitud completada');
-      fetchData();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al completar');
-    } finally {
-      setProcessing(false);
-    }
+  const handleComplete = () => {
+    setConfirmModal({
+      title: '¿Marcar como Completada?',
+      message: 'El material ya fue comprado o procesado. Esta acción es definitiva.',
+      confirmLabel: 'Marcar Completada',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        setProcessing(true);
+        try {
+          await markRequestAsCompleted(id!);
+          toast.success('Solicitud marcada como completada');
+          fetchData();
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al completar');
+        } finally {
+          setProcessing(false);
+        }
+      },
+    });
   };
 
   if (loading) return <div className="p-8 text-center text-slate-500">Cargando detalles...</div>;
@@ -95,7 +112,7 @@ const DetalleSolicitud = () => {
       <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
         <div>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-slate-800">SC-{solicitud.folio.toString().padStart(4, '0')}</h1>
+            <h1 className="text-2xl font-bold text-slate-800">SC-{solicitud.id?.slice(0, 8).toUpperCase()}</h1>
             <span className="px-3 py-1 bg-slate-100 text-slate-700 text-sm font-semibold rounded-full border border-slate-200">
               {solicitud.estatus}
             </span>
@@ -279,6 +296,17 @@ const DetalleSolicitud = () => {
         </div>
 
       </div>
+
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          danger={confirmModal.danger}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 };

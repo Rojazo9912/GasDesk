@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import Layout from './components/shared/Layout';
 import Login from './pages/Login';
@@ -27,6 +28,7 @@ import Reportes from './pages/Reportes';
 function App() {
   return (
     <AuthProvider>
+      <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
       <Routes>
         <Route path="/login" element={<Login />} />
         

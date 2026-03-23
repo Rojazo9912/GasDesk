@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { getSuppliers, createSupplier, updateSupplier, deleteSupplier } from '../../services/suppliers.service';
+import ConfirmModal from '../../components/shared/ConfirmModal';
 
 const emptyForm = { nombre: '', rfc: '', contactoNombre: '', contactoEmail: '', contactoTel: '', condicionesPago: '' };
 
@@ -10,6 +12,7 @@ const ProveedoresList = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -55,21 +58,13 @@ const ProveedoresList = () => {
       setModalOpen(false);
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al guardar');
+      toast.error(error.response?.data?.message || 'Error al guardar');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeactivate = async (id: string) => {
-    if (!confirm('¿Desactivar este proveedor?')) return;
-    try {
-      await deleteSupplier(id);
-      fetchData();
-    } catch (error) {
-      console.error(error);
-    }
-  };
+  const handleDeactivate = (id: string) => setPendingDelete(id);
 
   return (
     <div className="space-y-6">
@@ -175,6 +170,21 @@ const ProveedoresList = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {pendingDelete && (
+        <ConfirmModal
+          title="¿Desactivar proveedor?"
+          message="El proveedor no aparecerá en nuevas órdenes de compra."
+          confirmLabel="Desactivar"
+          danger
+          onConfirm={async () => {
+            const id = pendingDelete;
+            setPendingDelete(null);
+            try { await deleteSupplier(id); fetchData(); } catch (e) { console.error(e); }
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   );

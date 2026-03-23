@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { getPurchaseOrderById, sendPurchaseOrderEmail } from '../../services/purchase-orders.service';
 import { getInvoiceByOrden, createInvoice } from '../../services/invoices.service';
 import { getReceptionsByOrden, createReception } from '../../services/receptions.service';
+import ConfirmModal from '../../components/shared/ConfirmModal';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -66,6 +68,7 @@ const DetalleOrden = () => {
   const [oc, setOc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [confirmModal, setConfirmModal] = useState<{ title: string; message: string; confirmLabel?: string; onConfirm: () => void } | null>(null);
 
   // Reception state
   const [recepciones, setRecepciones] = useState<any[]>([]);
@@ -96,7 +99,7 @@ const DetalleOrden = () => {
       }
     } catch (error) {
       console.error(error);
-      alert('Error cargando Órden de compra');
+      toast.error('Error cargando Órden de compra');
       navigate('/ordenes');
     } finally {
       setLoading(false);
@@ -107,19 +110,26 @@ const DetalleOrden = () => {
     fetchData();
   }, [id]);
 
-  const handleSendSupplier = async () => {
-    if (!confirm('Esta acción enviará un correo al proveedor. ¿Continuar?')) return;
-    setSending(true);
-    try {
-      const fakeUrl = 'https://gasdesk-cloud.com/docs/OC-' + oc.folio + '.pdf';
-      await sendPurchaseOrderEmail(id!, fakeUrl);
-      alert('¡Órden enviada exitosamente!');
-      fetchData();
-    } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al enviar');
-    } finally {
-      setSending(false);
-    }
+  const handleSendSupplier = () => {
+    setConfirmModal({
+      title: 'Enviar al proveedor',
+      message: 'Se enviará un correo al proveedor con la orden de compra. ¿Continuar?',
+      confirmLabel: 'Enviar',
+      onConfirm: async () => {
+        setConfirmModal(null);
+        setSending(true);
+        try {
+          const fakeUrl = 'https://gasdesk-cloud.com/docs/OC-' + oc.folio + '.pdf';
+          await sendPurchaseOrderEmail(id!, fakeUrl);
+          toast.success('¡Órden enviada exitosamente!');
+          fetchData();
+        } catch (error: any) {
+          toast.error(error.response?.data?.message || 'Error al enviar');
+        } finally {
+          setSending(false);
+        }
+      },
+    });
   };
 
   const handleXmlFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -161,7 +171,7 @@ const DetalleOrden = () => {
       setCfdiData(null);
       setPdfUrl('');
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al registrar CFDI');
+      toast.error(err.response?.data?.message || 'Error al registrar CFDI');
     } finally {
       setSavingCfdi(false);
     }
@@ -191,7 +201,7 @@ const DetalleOrden = () => {
       setShowRecepcionForm(false);
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al registrar recepción');
+      toast.error(err.response?.data?.message || 'Error al registrar recepción');
     } finally {
       setSavingRecepcion(false);
     }
@@ -592,6 +602,15 @@ const DetalleOrden = () => {
         </div>
       )}
 
+      {confirmModal && (
+        <ConfirmModal
+          title={confirmModal.title}
+          message={confirmModal.message}
+          confirmLabel={confirmModal.confirmLabel}
+          onConfirm={confirmModal.onConfirm}
+          onCancel={() => setConfirmModal(null)}
+        />
+      )}
     </div>
   );
 };

@@ -1,11 +1,14 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { getLocations, createLocation, deleteLocation, updateLocation } from '../../services/locations.service';
+import ConfirmModal from '../../components/shared/ConfirmModal';
 
 const SucursalesList = () => {
   const [locations, setLocations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
   
   // Form state
   const [nombre, setNombre] = useState('');
@@ -54,20 +57,11 @@ const SucursalesList = () => {
       fetchLocations();
     } catch (error) {
       console.error('Error saving location', error);
-      alert('Error al guardar la sucursal');
+      toast.error('Error al guardar la sucursal');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('¿Estás seguro de desactivar esta sucursal?')) {
-      try {
-        await deleteLocation(id);
-        fetchLocations();
-      } catch (error) {
-        console.error('Error deleting location', error);
-      }
-    }
-  };
+  const handleDelete = (id: string) => setPendingDelete(id);
 
   return (
     <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
@@ -186,6 +180,21 @@ const SucursalesList = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {pendingDelete && (
+        <ConfirmModal
+          title="¿Desactivar sucursal?"
+          message="La sucursal no estará disponible para nuevas solicitudes."
+          confirmLabel="Desactivar"
+          danger
+          onConfirm={async () => {
+            const id = pendingDelete;
+            setPendingDelete(null);
+            try { await deleteLocation(id); fetchLocations(); } catch (e) { console.error(e); }
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   );

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { getLocations } from '../../services/locations.service';
 import { createPurchaseRequest } from '../../services/purchase-requests.service';
 // Simulando un posible product service si lo tuvieramos, sino estáticos (TODO)
@@ -53,7 +54,7 @@ const CrearSolicitud = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!locationId || items.some(i => !i.productoId || i.cantidad < 1)) {
-      alert('Por favor completa todos los campos requeridos y selecciona al menos un producto válido.');
+      toast.error('Por favor completa todos los campos requeridos y selecciona al menos un producto válido.');
       return;
     }
 
@@ -65,10 +66,10 @@ const CrearSolicitud = () => {
         items
       };
       const res = await createPurchaseRequest(payload);
-      alert('Solicitud enviada correctamente');
+      toast.success('Solicitud enviada correctamente');
       navigate(`/solicitudes/${res.id}`);
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al crear la SC');
+      toast.error(error.response?.data?.message || 'Error al crear la SC');
     } finally {
       setLoading(false);
     }

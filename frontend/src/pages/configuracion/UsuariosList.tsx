@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { getUsers, inviteUser, disableUser } from '../../services/users.service';
+import ConfirmModal from '../../components/shared/ConfirmModal';
 
 const UsuariosList = () => {
   const [users, setUsers] = useState<any[]>([]);
@@ -12,6 +14,7 @@ const UsuariosList = () => {
   const [password, setPassword] = useState('');
   const [rol, setRol] = useState('SOLICITANTE');
   const [inviting, setInviting] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<{ id: string; email: string } | null>(null);
 
   const fetchUsers = async () => {
     try {
@@ -45,22 +48,13 @@ const UsuariosList = () => {
       fetchUsers();
     } catch (error: any) {
       console.error('Error inviting user', error);
-      alert(error.response?.data?.message || 'Error al invitar al usuario');
+      toast.error(error.response?.data?.message || 'Error al invitar al usuario');
     } finally {
       setInviting(false);
     }
   };
 
-  const handleDelete = async (id: string, emailStr: string) => {
-    if (confirm(`¿Estás seguro de desactivar al usuario ${emailStr}?`)) {
-      try {
-        await disableUser(id);
-        fetchUsers();
-      } catch (error) {
-        console.error('Error disabling user', error);
-      }
-    }
-  };
+  const handleDelete = (id: string, email: string) => setPendingDelete({ id, email });
 
   const roleColors: Record<string, string> = {
     SUPER_ADMIN: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -205,6 +199,20 @@ const UsuariosList = () => {
             </form>
           </div>
         </div>
+      )}
+      {pendingDelete && (
+        <ConfirmModal
+          title="¿Desactivar usuario?"
+          message={`El usuario ${pendingDelete.email} perderá acceso a la plataforma.`}
+          confirmLabel="Desactivar"
+          danger
+          onConfirm={async () => {
+            const { id } = pendingDelete;
+            setPendingDelete(null);
+            try { await disableUser(id); fetchUsers(); } catch (e) { console.error(e); }
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   );

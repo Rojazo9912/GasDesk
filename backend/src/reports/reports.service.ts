@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { EstatusSC, EstatusOC } from '@prisma/client';
 
 @Injectable()
 export class ReportsService {
@@ -15,18 +16,18 @@ export class ReportsService {
           tenantId,
           estatus: {
             in: [
-              'PENDIENTE_NIVEL_1',
-              'PENDIENTE_NIVEL_2',
-              'PENDIENTE_NIVEL_3',
-              'PENDIENTE_COMPRAS',
-            ] as any[],
+              EstatusSC.PENDIENTE_NIVEL_1,
+              EstatusSC.PENDIENTE_NIVEL_2,
+              EstatusSC.PENDIENTE_NIVEL_3,
+              EstatusSC.PENDIENTE_COMPRAS,
+            ],
           },
         },
       }),
       this.prisma.purchaseOrder.count({
         where: {
           tenantId,
-          estatus: { in: ['ENVIADA', 'RECIBIDA_PARCIAL'] as any[] },
+          estatus: { in: [EstatusOC.ENVIADA, EstatusOC.RECIBIDA_PARCIAL] },
         },
       }),
       this.prisma.purchaseOrder.aggregate({
@@ -34,7 +35,7 @@ export class ReportsService {
         where: {
           tenantId,
           fechaEmision: { gte: firstDayOfMonth },
-          estatus: { not: 'CANCELADA' as any },
+          estatus: { not: EstatusOC.CANCELADA },
         },
       }),
     ]);
@@ -64,7 +65,7 @@ export class ReportsService {
     const ordenes = await this.prisma.purchaseOrder.findMany({
       where: {
         tenantId,
-        estatus: { not: 'CANCELADA' as any },
+        estatus: { not: EstatusOC.CANCELADA },
         ...(Object.keys(whereDate).length ? { fechaEmision: whereDate } : {}),
       },
       include: {

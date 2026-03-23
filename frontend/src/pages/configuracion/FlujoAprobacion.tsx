@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { getApprovalFlows, createApprovalFlow, reorderApprovalFlows, deleteApprovalFlow } from '../../services/approval-flows.service';
+import ConfirmModal from '../../components/shared/ConfirmModal';
 import { getUsers } from '../../services/users.service';
 import {
   DndContext,
@@ -72,6 +74,7 @@ const FlujoAprobacion = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [savingReorder, setSavingReorder] = useState(false);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   // Form
   const [nombre, setNombre] = useState('');
@@ -117,10 +120,10 @@ const FlujoAprobacion = () => {
     try {
       const flowIds = flows.map(f => f.id);
       await reorderApprovalFlows(flowIds);
-      alert('Orden guardado exitosamente.');
+      toast.success('Orden guardado exitosamente.');
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al guardar el orden. Recuerda que el último nivel debe ser de COMPRAS.');
+      toast.error(error.response?.data?.message || 'Error al guardar el orden. Recuerda que el último nivel debe ser de COMPRAS.');
       fetchData(); // Reset order
     } finally {
       setSavingReorder(false);
@@ -141,20 +144,11 @@ const FlujoAprobacion = () => {
       setTiempoLimiteHrs('');
       fetchData();
     } catch (error: any) {
-      alert(error.response?.data?.message || 'Error al crear nivel');
+      toast.error(error.response?.data?.message || 'Error al crear nivel');
     }
   };
 
-  const handleDelete = async (id: string) => {
-    if (confirm('¿Desactivar este nivel de aprobación?')) {
-      try {
-        await deleteApprovalFlow(id);
-        fetchData();
-      } catch (error) {
-        console.error(error);
-      }
-    }
-  };
+  const handleDelete = (id: string) => setPendingDelete(id);
 
   if (loading) return <div className="p-4">Cargando...</div>;
 
@@ -265,6 +259,21 @@ const FlujoAprobacion = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {pendingDelete && (
+        <ConfirmModal
+          title="¿Desactivar nivel de aprobación?"
+          message="Las solicitudes en este nivel quedarán sin aprobador asignado."
+          confirmLabel="Desactivar"
+          danger
+          onConfirm={async () => {
+            const id = pendingDelete;
+            setPendingDelete(null);
+            try { await deleteApprovalFlow(id); fetchData(); } catch (e) { console.error(e); }
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   );

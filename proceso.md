@@ -157,11 +157,35 @@
 
 ## Semana 9 — QA y Piloto
 
-- ⏳ Pruebas end-to-end del ciclo completo (SC → OC → Factura → Inventario)
-- ⏳ Corrección de bugs encontrados
-- ⏳ Deploy a producción (Railway + Vercel)
+- ✅ Pruebas end-to-end del ciclo completo (revisión de código + corrección de bugs)
+- ✅ Corrección de bugs encontrados (ver lista abajo)
+- ✅ Deploy a producción (Railway — backend + frontend)
 - ⏳ Demo con cliente piloto
 - ⏳ Recopilación de feedback
+
+### Bugs corregidos en QA
+- **[CRÍTICO] DetalleSolicitud.tsx**: `solicitud.folio` no existe en PurchaseRequest → TypeError en runtime. Cambiado a `solicitud.id.slice(0,8).toUpperCase()`.
+- **[MEDIO] inventory.service.ts**: `adjust()` creaba nuevo registro con `Math.abs(cantidad)` pero actualizaba con `increment: cantidad` (inconsistente con ajustes negativos). Corregido usando `cantidad` en ambos paths.
+- **[BAJO] reports.service.ts**: Enum string literals con `as any[]` reemplazados por `EstatusSC`/`EstatusOC` importados de `@prisma/client`.
+
+---
+
+## Semana 10 — UX y Pulido
+
+- ✅ Instalar `react-hot-toast` e integrar `<Toaster />` en App.tsx
+- ✅ Crear `ConfirmModal` reutilizable (reemplaza todos los `confirm()` nativos)
+- ✅ Reemplazar todos los `alert()` / `confirm()` en 9 páginas con toasts y modales
+
+### Archivos migrados
+- `solicitudes/DetalleSolicitud.tsx` — aprobar/rechazar/completar con ConfirmModal + toast
+- `solicitudes/CrearSolicitud.tsx` — validación y éxito con toast
+- `ordenes/NuevaOrden.tsx` — errores y éxito con toast
+- `ordenes/DetalleOrden.tsx` — envío a proveedor con ConfirmModal, CFDI y recepción con toast
+- `configuracion/ProveedoresList.tsx` — baja con ConfirmModal, error con toast
+- `inventario/CatalogoProductos.tsx` — baja con ConfirmModal, error con toast
+- `configuracion/SucursalesList.tsx` — desactivar con ConfirmModal, error con toast
+- `configuracion/UsuariosList.tsx` — desactivar con ConfirmModal, error con toast
+- `configuracion/FlujoAprobacion.tsx` — desactivar nivel con ConfirmModal, orden/errores con toast
 
 ---
 

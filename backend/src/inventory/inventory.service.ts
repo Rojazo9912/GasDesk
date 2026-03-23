@@ -60,7 +60,7 @@ export class InventoryService {
 
     await this.prisma.inventory.upsert({
       where: { productId_locationId: { productId, locationId } },
-      create: { productId, locationId, cantidad: Math.abs(cantidad) },
+      create: { productId, locationId, cantidad },
       update: { cantidad: { increment: cantidad } },
     });
 

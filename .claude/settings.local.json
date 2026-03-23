@@ -5,7 +5,9 @@
       "Bash(npm install)",
       "Bash(npx prisma migrate dev --name add_folio_to_purchase_order)",
       "Bash(npx prisma db push)",
-      "Bash(xargs grep -l \"Invoice\\\\|invoice\\\\|factura\")"
+      "Bash(xargs grep -l \"Invoice\\\\|invoice\\\\|factura\")",
+      "Bash(npm install react-hot-toast)",
+      "Bash(npx tsc --noEmit)"
     ]
   }
 }

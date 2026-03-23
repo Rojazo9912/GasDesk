@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { getProducts, createProduct, updateProduct, deleteProduct } from '../../services/products.service';
+import ConfirmModal from '../../components/shared/ConfirmModal';
 
 const UNIDADES = ['Pieza', 'Caja', 'Litro', 'Kilogramo', 'Metro', 'Servicio', 'Par', 'Paquete'];
 
@@ -12,6 +14,7 @@ const CatalogoProductos = () => {
   const [saving, setSaving] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [pendingDelete, setPendingDelete] = useState<string | null>(null);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -50,21 +53,13 @@ const CatalogoProductos = () => {
       setModalOpen(false);
       fetchData();
     } catch (err: any) {
-      alert(err.response?.data?.message || 'Error al guardar');
+      toast.error(err.response?.data?.message || 'Error al guardar');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeactivate = async (id: string) => {
-    if (!confirm('¿Dar de baja este producto?')) return;
-    try {
-      await deleteProduct(id);
-      fetchData();
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const handleDeactivate = (id: string) => setPendingDelete(id);
 
   return (
     <div className="space-y-6">
@@ -181,6 +176,21 @@ const CatalogoProductos = () => {
             </form>
           </div>
         </div>
+      )}
+
+      {pendingDelete && (
+        <ConfirmModal
+          title="¿Dar de baja el producto?"
+          message="Ya no aparecerá disponible para nuevas solicitudes."
+          confirmLabel="Dar de baja"
+          danger
+          onConfirm={async () => {
+            const id = pendingDelete;
+            setPendingDelete(null);
+            try { await deleteProduct(id); fetchData(); } catch (e) { console.error(e); }
+          }}
+          onCancel={() => setPendingDelete(null)}
+        />
       )}
     </div>
   );

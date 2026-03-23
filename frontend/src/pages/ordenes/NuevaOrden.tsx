@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { getPurchaseRequestById } from '../../services/purchase-requests.service';
 import { getSuppliers } from '../../services/suppliers.service';
 import { createPurchaseOrder } from '../../services/purchase-orders.service';
@@ -41,7 +42,7 @@ const NuevaOrden = () => {
         
       } catch (error) {
         console.error(error);
-        alert('Error cargando los datos base para la orden');
+        toast.error('Error cargando los datos base para la orden');
         navigate('/ordenes');
       } finally {
         setLoading(false);
@@ -70,7 +71,7 @@ const NuevaOrden = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!supplierId) return alert('Debes seleccionar un proveedor válido.');
+    if (!supplierId) { toast.error('Debes seleccionar un proveedor válido.'); return; }
     
     setSaving(true);
     try {
@@ -85,11 +86,11 @@ const NuevaOrden = () => {
         items
       };
       const res = await createPurchaseOrder(payload);
-      alert('Orden de compra generada exitosamente. Lista para ser revisada y enviada.');
+      toast.success('Orden de compra generada exitosamente. Lista para ser revisada y enviada.');
       navigate(`/ordenes/${res.id}`);
     } catch(err: any) {
       console.error(err);
-      alert(err.response?.data?.message || 'Error al guardar la orden');
+      toast.error(err.response?.data?.message || 'Error al guardar la orden');
     } finally {
       setSaving(false);
     }
