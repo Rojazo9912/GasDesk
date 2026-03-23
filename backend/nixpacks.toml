@@ -2,4 +2,7 @@
 nixPkgs = ["nodejs_22", "npm-10_x", "openssl"]
 
 [phases.build]
-cmds = ["npm run build", "npx prisma db push --skip-generate"]
+cmds = ["npm run build"]
+
+[start]
+cmd = "npx prisma db push --skip-generate && node dist/src/main.js"
