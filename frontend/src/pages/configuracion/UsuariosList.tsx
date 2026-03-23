@@ -1,10 +1,21 @@
 import { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { getUsers, inviteUser, disableUser } from '../../services/users.service';
+import { getPerfiles } from '../../services/perfiles.service';
 import ConfirmModal from '../../components/shared/ConfirmModal';
+
+const ROL_LABELS: Record<string, string> = {
+  ADMIN: 'Administrador',
+  GERENTE: 'Gerente',
+  COMPRAS: 'Compras / Pagos',
+  CONTRALOR: 'Contraloría',
+  ALMACENISTA: 'Almacenista',
+  SOLICITANTE: 'Solicitante',
+};
 
 const UsuariosList = () => {
   const [users, setUsers] = useState<any[]>([]);
+  const [perfiles, setPerfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -30,6 +41,7 @@ const UsuariosList = () => {
 
   useEffect(() => {
     fetchUsers();
+    getPerfiles().then(setPerfiles).catch(() => {});
   }, []);
 
   const handleOpenModal = () => {
@@ -199,8 +211,26 @@ const UsuariosList = () => {
                   </button>
                 </div>
               </div>
+              {perfiles.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-slate-700 mb-1">Perfil / Puesto</label>
+                  <select
+                    onChange={e => {
+                      const p = perfiles.find(x => x.id === e.target.value);
+                      if (p) setRol(p.rol);
+                    }}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-md focus:outline-none focus:ring-2 focus:ring-emerald-500 text-sm"
+                  >
+                    <option value="">— Seleccionar perfil (opcional) —</option>
+                    {perfiles.map(p => (
+                      <option key={p.id} value={p.id}>{p.nombre} ({ROL_LABELS[p.rol] ?? p.rol})</option>
+                    ))}
+                  </select>
+                  <p className="text-xs text-slate-400 mt-1">Al seleccionar un perfil se pre-configura el nivel de acceso.</p>
+                </div>
+              )}
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Rol</label>
+                <label className="block text-sm font-medium text-slate-700 mb-1">Nivel de acceso</label>
                 <select
                   value={rol}
                   onChange={(e) => setRol(e.target.value)}

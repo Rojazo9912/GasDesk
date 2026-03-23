@@ -82,6 +82,7 @@ model Tenant {
   proveedores      Supplier[]
   productos        Product[]
   departamentos    Department[]
+  perfiles         Perfil[]
   deptInventario   DepartmentInventory[]
   deptMovimientos  DepartmentMovement[]
 }
@@ -104,21 +105,38 @@ model Department {
 // ─── Users ────────────────────────────────────────────────────────────────────
 
 model User {
-  id       String   @id @default(uuid())
-  tenantId String
-  nombre   String
-  email    String   @unique
-  password String
-  rol      Rol
-  activo   Boolean  @default(true)
-  creadoEn DateTime @default(now())
+  id        String   @id @default(uuid())
+  tenantId  String
+  nombre    String
+  email     String   @unique
+  password  String
+  rol       Rol
+  perfilId  String?
+  activo    Boolean  @default(true)
+  creadoEn  DateTime @default(now())
 
   tenant                 Tenant            @relation(fields: [tenantId], references: [id])
+  perfil                 Perfil?           @relation(fields: [perfilId], references: [id])
   solicitudes            PurchaseRequest[] @relation("Solicitante")
   recepciones            Reception[]       @relation("Almacenista")
   aprobaciones           ApprovalHistory[]
   flujosComoAprobador    ApprovalFlow[]    @relation("Aprobador")
   flujosComoAlterno      ApprovalFlow[]    @relation("Alterno")
+}
+
+// ─── Perfiles ─────────────────────────────────────────────────────────────────
+
+model Perfil {
+  id          String   @id @default(uuid())
+  tenantId    String
+  nombre      String
+  descripcion String?
+  rol         Rol
+  activo      Boolean  @default(true)
+  creadoEn    DateTime @default(now())
+
+  tenant   Tenant @relation(fields: [tenantId], references: [id])
+  usuarios User[]
 }
 
 // ─── Locations ────────────────────────────────────────────────────────────────

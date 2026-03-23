@@ -10,6 +10,7 @@ const ConfiguracionLayout = () => {
     { name: 'Flujos de Aprobación', path: '/configuracion/flujos' },
     { name: 'Proveedores', path: '/configuracion/proveedores' },
     { name: 'Departamentos', path: '/configuracion/departamentos' },
+    { name: 'Perfiles', path: '/configuracion/perfiles' },
   ];
 
   return (
