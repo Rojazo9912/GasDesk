@@ -74,13 +74,27 @@ model Tenant {
   activo   Boolean  @default(true)
   creadoEn DateTime @default(now())
 
-  usuarios    User[]
-  sucursales  Location[]
-  flujos      ApprovalFlow[]
-  solicitudes PurchaseRequest[]
-  ordenes     PurchaseOrder[]
-  proveedores Supplier[]
-  productos   Product[]
+  usuarios      User[]
+  sucursales    Location[]
+  flujos        ApprovalFlow[]
+  solicitudes   PurchaseRequest[]
+  ordenes       PurchaseOrder[]
+  proveedores   Supplier[]
+  productos     Product[]
+  departamentos Department[]
+}
+
+// ─── Departments ──────────────────────────────────────────────────────────────
+
+model Department {
+  id          String   @id @default(uuid())
+  tenantId    String
+  nombre      String
+  descripcion String?
+  activo      Boolean  @default(true)
+  creadoEn    DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
 }
 
 // ─── Users ────────────────────────────────────────────────────────────────────

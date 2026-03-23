@@ -10,6 +10,7 @@ import SucursalesList from './pages/configuracion/SucursalesList';
 import UsuariosList from './pages/configuracion/UsuariosList';
 import FlujoAprobacion from './pages/configuracion/FlujoAprobacion';
 import ProveedoresList from './pages/configuracion/ProveedoresList';
+import DepartamentosList from './pages/configuracion/DepartamentosList';
 
 import ListaSolicitudes from './pages/solicitudes/ListaSolicitudes';
 import CrearSolicitud from './pages/solicitudes/CrearSolicitud';
@@ -60,6 +61,7 @@ function App() {
             <Route path="usuarios" element={<UsuariosList />} />
             <Route path="flujos" element={<FlujoAprobacion />} />
             <Route path="proveedores" element={<ProveedoresList />} />
+            <Route path="departamentos" element={<DepartamentosList />} />
           </Route>
         </Route>
       </Routes>

@@ -10,7 +10,9 @@
       "Bash(npx tsc --noEmit)",
       "Bash(npm audit --audit-level=high)",
       "Bash(npm audit --audit-level=moderate)",
-      "Bash(npm audit fix --dry-run)"
+      "Bash(npm audit fix --dry-run)",
+      "Bash(npx prisma migrate dev --name add_departments)",
+      "Bash(npx prisma generate)"
     ]
   }
 }
