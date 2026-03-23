@@ -1,22 +1,88 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { getPurchaseOrderById, sendPurchaseOrderEmail } from '../../services/purchase-orders.service';
+import { getInvoiceByOrden, createInvoice } from '../../services/invoices.service';
 
-// El estatus determinará los botones disponibles
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+interface CfdiData {
+  uuid: string;
+  rfcEmisor: string;
+  fechaEmision: string;
+  subtotal: number;
+  iva: number;
+  total: number;
+}
+
+const parseCfdiXml = (xmlText: string): CfdiData | null => {
+  try {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(xmlText, 'text/xml');
+    const comp = doc.documentElement;
+
+    if (comp.nodeName === 'parsererror') return null;
+
+    const subtotal = parseFloat(comp.getAttribute('SubTotal') || '0');
+    const total = parseFloat(comp.getAttribute('Total') || '0');
+    const fechaEmision = comp.getAttribute('Fecha') || '';
+
+    const emisor =
+      doc.getElementsByTagNameNS('http://www.sat.gob.mx/cfd/4', 'Emisor')[0] ||
+      doc.getElementsByTagName('cfdi:Emisor')[0];
+    const rfcEmisor = emisor?.getAttribute('Rfc') || '';
+
+    const tfd =
+      doc.getElementsByTagNameNS('http://www.sat.gob.mx/TimbreFiscalDigital', 'TimbreFiscalDigital')[0] ||
+      doc.getElementsByTagName('tfd:TimbreFiscalDigital')[0];
+    const uuid = tfd?.getAttribute('UUID') || '';
+
+    const iva = parseFloat((total - subtotal).toFixed(2));
+
+    if (!uuid || !rfcEmisor) return null;
+    return { uuid, rfcEmisor, fechaEmision, subtotal, iva, total };
+  } catch {
+    return null;
+  }
+};
+
+const validacionBadge = (estatus: string) => {
+  switch (estatus) {
+    case 'VALIDA': return 'bg-emerald-100 text-emerald-800 border border-emerald-200';
+    case 'DIFERENCIA_MONTO': return 'bg-amber-100 text-amber-800 border border-amber-200';
+    case 'RFC_INVALIDO': return 'bg-rose-100 text-rose-800 border border-rose-200';
+    case 'UUID_DUPLICADO': return 'bg-rose-100 text-rose-800 border border-rose-200';
+    default: return 'bg-slate-100 text-slate-700 border border-slate-200';
+  }
+};
+
+// ─── Component ────────────────────────────────────────────────────────────────
+
 const DetalleOrden = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const pdfRef = useRef<HTMLDivElement>(null);
-  
+
   const [oc, setOc] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
 
+  // CFDI state
+  const [factura, setFactura] = useState<any>(null);
+  const [cfdiData, setCfdiData] = useState<CfdiData | null>(null);
+  const [pdfUrl, setPdfUrl] = useState('');
+  const [xmlError, setXmlError] = useState('');
+  const [savingCfdi, setSavingCfdi] = useState(false);
+  const [showCfdiForm, setShowCfdiForm] = useState(false);
+
   const fetchData = async () => {
     try {
       if (id) {
-        const data = await getPurchaseOrderById(id);
-        setOc(data);
+        const [ocData, facturaData] = await Promise.all([
+          getPurchaseOrderById(id),
+          getInvoiceByOrden(id).catch(() => null),
+        ]);
+        setOc(ocData);
+        setFactura(facturaData);
       }
     } catch (error) {
       console.error(error);
@@ -32,21 +98,10 @@ const DetalleOrden = () => {
   }, [id]);
 
   const handleSendSupplier = async () => {
-    if (!confirm('Esta acción convertirá el documento en PDF y enviará un correo firmado al proveedor. ¿Continuar?')) return;
+    if (!confirm('Esta acción enviará un correo al proveedor. ¿Continuar?')) return;
     setSending(true);
-    
     try {
-      // PROCESO DE PDF LIVIANO POR PARTE DEL CLIENTE (MOCK / VISUAL)
-      let fakeUrl = 'https://ejemplo.com/oc-generada.pdf';
-      if (pdfRef.current) {
-         // Aqui podríamos usar jsPDF para generar y subir al cloud 
-         // En el MVP solo mandaremos una alerta y pasaremos el string al backend
-         // const canvas = await html2canvas(pdfRef.current);
-         // const imgData = canvas.toDataURL('image/png');
-         console.log('PDF Snapshot logico capturado en base64 (omitiendo por payload size en DB local)');
-         fakeUrl = 'https://gasdesk-cloud.com/docs/OC-' + oc.folio + '.pdf'; 
-      }
-
+      const fakeUrl = 'https://gasdesk-cloud.com/docs/OC-' + oc.folio + '.pdf';
       await sendPurchaseOrderEmail(id!, fakeUrl);
       alert('¡Órden enviada exitosamente!');
       fetchData();
@@ -57,117 +112,314 @@ const DetalleOrden = () => {
     }
   };
 
+  const handleXmlFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setXmlError('');
+    setCfdiData(null);
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const text = ev.target?.result as string;
+      const parsed = parseCfdiXml(text);
+      if (!parsed) {
+        setXmlError('El archivo no parece ser un CFDI válido (UUID o RFC no encontrados).');
+        return;
+      }
+      setCfdiData(parsed);
+    };
+    reader.readAsText(file);
+  };
+
+  const handleSubmitCfdi = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!cfdiData) return;
+    setSavingCfdi(true);
+    try {
+      const saved = await createInvoice({
+        ordenId: id!,
+        folioFiscalUuid: cfdiData.uuid,
+        rfcEmisor: cfdiData.rfcEmisor,
+        fechaEmision: cfdiData.fechaEmision,
+        subtotal: cfdiData.subtotal,
+        iva: cfdiData.iva,
+        total: cfdiData.total,
+        pdfUrl: pdfUrl || undefined,
+      });
+      setFactura(saved);
+      setShowCfdiForm(false);
+      setCfdiData(null);
+      setPdfUrl('');
+    } catch (err: any) {
+      alert(err.response?.data?.message || 'Error al registrar CFDI');
+    } finally {
+      setSavingCfdi(false);
+    }
+  };
+
   if (loading) return <div className="p-8 text-center text-slate-500">Cargando la captura...</div>;
   if (!oc) return null;
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-       
-       <div className="flex justify-between items-center bg-white p-4 rounded border border-slate-200 shadow-sm">
-         <div className="flex items-center gap-4">
-           <button onClick={() => navigate('/ordenes')} className="text-slate-400 hover:text-slate-800 font-bold px-2 py-1 rounded hover:bg-slate-100">←</button>
-           <h1 className="text-xl font-bold text-slate-800">OC-{oc.folio?.toString().padStart(4, '0') || 'N/A'}</h1>
-           <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold uppercase rounded border border-blue-200">
-             {oc.estatus.replace(/_/g, ' ')}
-           </span>
-         </div>
-         <div className="flex gap-2">
-            <button 
-              className="px-4 py-2 border border-slate-200 text-slate-600 rounded bg-slate-50 hover:bg-slate-100 text-sm font-semibold transition shadow-sm"
-              onClick={() => window.print()}
+
+      {/* Header */}
+      <div className="flex justify-between items-center bg-white p-4 rounded border border-slate-200 shadow-sm">
+        <div className="flex items-center gap-4">
+          <button onClick={() => navigate('/ordenes')} className="text-slate-400 hover:text-slate-800 font-bold px-2 py-1 rounded hover:bg-slate-100">←</button>
+          <h1 className="text-xl font-bold text-slate-800">OC-{oc.folio?.toString().padStart(4, '0') || 'N/A'}</h1>
+          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold uppercase rounded border border-blue-200">
+            {oc.estatus.replace(/_/g, ' ')}
+          </span>
+        </div>
+        <div className="flex gap-2">
+          <button
+            className="px-4 py-2 border border-slate-200 text-slate-600 rounded bg-slate-50 hover:bg-slate-100 text-sm font-semibold transition shadow-sm"
+            onClick={() => window.print()}
+          >
+            Imprimir Local
+          </button>
+          {oc.estatus === 'BORRADOR' && (
+            <button
+              onClick={handleSendSupplier}
+              disabled={sending}
+              className="px-4 py-2 bg-slate-800 text-white rounded font-bold hover:bg-slate-900 shadow-sm transition text-sm disabled:opacity-50"
             >
-              🖨️ Imprimir Local
+              {sending ? 'Enviando...' : 'Enviar Autorización al Proveedor'}
             </button>
-            {oc.estatus === 'BORRADOR' && (
-              <button 
-                onClick={handleSendSupplier}
-                disabled={sending}
-                className="px-4 py-2 bg-slate-800 text-white rounded font-bold hover:bg-slate-900 shadow-sm transition text-sm disabled:opacity-50"
+          )}
+        </div>
+      </div>
+
+      {/* Documento OC */}
+      <div className="bg-white border rounded shadow-md overflow-hidden relative">
+        <div ref={pdfRef} className="p-10 md:p-16 min-h-[800px] bg-white text-slate-800 print:shadow-none print:p-0">
+
+          <div className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
+            <div>
+              <h2 className="text-3xl font-black uppercase text-slate-900 tracking-tight">Órden de Compra</h2>
+              <div className="text-slate-500 mt-2 font-medium">FOLIO: <span className="text-slate-800 font-mono">OC-{oc.folio?.toString().padStart(4, '0')}</span></div>
+              <div className="text-slate-500 font-medium">FECHA EMISIÓN: <span className="text-slate-800">{new Date(oc.fechaEmision).toLocaleDateString()}</span></div>
+            </div>
+            <div className="text-right">
+              <h3 className="text-xl font-bold text-emerald-600">GasDesk</h3>
+              <p className="text-sm text-slate-500 mt-1">Av. Las Torres 345, Monterrey NL.</p>
+              <p className="text-sm text-slate-500">RFC: XAXX010101000</p>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-2 gap-10 mb-8 max-w-3xl">
+            <div>
+              <h4 className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-2">Proveedor Destino</h4>
+              <div className="font-bold text-slate-800">{oc.supplier?.nombre}</div>
+              <div className="text-sm mt-1">RFC: {oc.supplier?.rfc}</div>
+              <div className="text-sm mt-1 text-slate-600">Atención: {oc.supplier?.contactoNombre || oc.supplier?.contactoEmail}</div>
+            </div>
+            <div>
+              <h4 className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-2">Entregar En</h4>
+              <div className="font-bold text-slate-800">{oc.location?.nombre}</div>
+              <div className="text-sm mt-1 text-slate-600">Tipo: {oc.location?.tipo}</div>
+              <div className="text-sm mt-1 text-slate-600">Horario: 9AM a 6PM</div>
+            </div>
+          </div>
+
+          <table className="w-full text-sm mb-8 border-collapse">
+            <thead>
+              <tr className="bg-slate-100 uppercase text-slate-600 border-y border-slate-300">
+                <th className="py-2 px-3 text-left">Partida / Producto</th>
+                <th className="py-2 px-3 text-center">Unidad</th>
+                <th className="py-2 px-3 text-center">Cant.</th>
+                <th className="py-2 px-3 text-right">Costo Unitario</th>
+                <th className="py-2 px-3 text-right">Importe</th>
+              </tr>
+            </thead>
+            <tbody>
+              {oc.items?.map((item: any, idx: number) => (
+                <tr key={item.id} className="border-b border-slate-200">
+                  <td className="py-3 px-3 font-medium">{idx + 1}. {item.product?.nombre}</td>
+                  <td className="py-3 px-3 text-center">{item.product?.unidad}</td>
+                  <td className="py-3 px-3 text-center font-bold">{item.cantidadOrdenada}</td>
+                  <td className="py-3 px-3 text-right font-mono">${item.precioUnitario?.toFixed(2)}</td>
+                  <td className="py-3 px-3 text-right font-mono font-bold">${item.importe?.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <div className="flex justify-end pt-4">
+            <div className="w-72">
+              <div className="flex justify-between py-1 text-slate-600">
+                <span>SUBTOTAL</span>
+                <span className="font-mono">${oc.subtotal?.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-1 text-slate-600">
+                <span>IVA (16%)</span>
+                <span className="font-mono">${oc.iva?.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between py-2 border-t-2 border-slate-800 mt-2 font-bold text-lg text-slate-900">
+                <span>TOTAL MXN</span>
+                <span className="font-mono">${oc.total?.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      {/* ─── Sección CFDI ──────────────────────────────────────────────────── */}
+      {oc.estatus !== 'BORRADOR' && (
+        <div className="bg-white rounded-lg border border-slate-200 shadow-sm print:hidden">
+          <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center">
+            <h2 className="text-base font-bold text-slate-800">Factura CFDI</h2>
+            {!factura && !showCfdiForm && (
+              <button
+                onClick={() => setShowCfdiForm(true)}
+                className="text-sm bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-1.5 rounded font-medium transition"
               >
-                {sending ? 'Generando PDF...' : 'Enviar Autorización al Proveedor'}
+                + Subir CFDI
               </button>
             )}
-         </div>
-       </div>
-
-       {/* DOCUMENTO RENDERIZADO VISIBLE (AQUI TOMA FOTO EL DOM) */}
-       <div className="bg-white border rounded shadow-md overflow-hidden relative">
-          <div ref={pdfRef} className="p-10 md:p-16 min-h-[800px] bg-white text-slate-800 print:shadow-none print:p-0">
-             
-             {/* Header */}
-             <div className="flex justify-between items-start border-b-2 border-slate-800 pb-6 mb-8">
-                <div>
-                   <h2 className="text-3xl font-black uppercase text-slate-900 tracking-tight">Órden de Compra</h2>
-                   <div className="text-slate-500 mt-2 font-medium">FOLIO: <span className="text-slate-800 font-mono">OC-{oc.folio?.toString().padStart(4,'0')}</span></div>
-                   <div className="text-slate-500 font-medium">FECHA EMISIÓN: <span className="text-slate-800">{new Date(oc.fechaEmision).toLocaleDateString()}</span></div>
-                </div>
-                <div className="text-right">
-                   <h3 className="text-xl font-bold text-emerald-600">GasDesk</h3>
-                   <p className="text-sm text-slate-500 mt-1">Av. Las Torres 345, Monterrey NL.</p>
-                   <p className="text-sm text-slate-500">RFC: XAXX010101000</p>
-                </div>
-             </div>
-
-             {/* Addresses */}
-             <div className="grid grid-cols-2 gap-10 mb-8 max-w-3xl">
-                <div>
-                  <h4 className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-2">Proveedor Destino</h4>
-                  <div className="font-bold text-slate-800">{oc.supplier?.nombre}</div>
-                  <div className="text-sm mt-1">RFC: {oc.supplier?.rfc}</div>
-                  <div className="text-sm mt-1 text-slate-600">Atención: {oc.supplier?.contactoNombre || oc.supplier?.contactoEmail}</div>
-                </div>
-                <div>
-                  <h4 className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-2">Entregar En</h4>
-                  <div className="font-bold text-slate-800">{oc.location?.nombre}</div>
-                  <div className="text-sm mt-1 text-slate-600">Tipo de Oficina: {oc.location?.tipo}</div>
-                  <div className="text-sm mt-1 text-slate-600">Condiciones: Entrega en horario de 9AM a 6PM</div>
-                </div>
-             </div>
-
-             {/* Items Table */}
-             <table className="w-full text-sm mb-8 border-collapse">
-                <thead>
-                   <tr className="bg-slate-100 uppercase text-slate-600 border-y border-slate-300">
-                     <th className="py-2 px-3 text-left">Partida / Producto</th>
-                     <th className="py-2 px-3 text-center">Unidad</th>
-                     <th className="py-2 px-3 text-center">Cant.</th>
-                     <th className="py-2 px-3 text-right">Costo Unitario</th>
-                     <th className="py-2 px-3 text-right">Importe</th>
-                   </tr>
-                </thead>
-                <tbody>
-                   {oc.items?.map((item: any, idx: number) => (
-                     <tr key={item.id} className="border-b border-slate-200">
-                       <td className="py-3 px-3 font-medium">{idx + 1}. {item.product?.nombre}</td>
-                       <td className="py-3 px-3 text-center">{item.product?.unidad}</td>
-                       <td className="py-3 px-3 text-center font-bold">{item.cantidadOrdenada}</td>
-                       <td className="py-3 px-3 text-right font-mono">${item.precioUnitario?.toFixed(2)}</td>
-                       <td className="py-3 px-3 text-right font-mono font-bold">${item.importe?.toFixed(2)}</td>
-                     </tr>
-                   ))}
-                </tbody>
-             </table>
-
-             {/* Footer Totals */}
-             <div className="flex justify-end pt-4">
-                <div className="w-72">
-                  <div className="flex justify-between py-1 text-slate-600">
-                    <span>SUBTOTAL</span>
-                    <span className="font-mono">${oc.subtotal?.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-1 text-slate-600">
-                    <span>IVA (16%)</span>
-                    <span className="font-mono">${oc.iva?.toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between py-2 border-t-2 border-slate-800 mt-2 font-bold text-lg text-slate-900">
-                    <span>TOTAL MXN</span>
-                    <span className="font-mono">${oc.total?.toFixed(2)}</span>
-                  </div>
-                </div>
-             </div>
-
           </div>
-       </div>
+
+          {/* Factura ya registrada */}
+          {factura && (
+            <div className="p-6 space-y-4">
+              <div className="flex items-center gap-3">
+                <span className={`px-3 py-1 text-xs font-bold rounded-full ${validacionBadge(factura.estatusValidacion)}`}>
+                  {factura.estatusValidacion.replace(/_/g, ' ')}
+                </span>
+                {factura.notasValidacion && (
+                  <span className="text-sm text-amber-700">{factura.notasValidacion}</span>
+                )}
+              </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">UUID Fiscal</p>
+                  <p className="font-mono text-slate-800 text-xs break-all">{factura.folioFiscalUuid}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">Fecha Emisión</p>
+                  <p className="text-slate-800">{new Date(factura.fechaEmision).toLocaleDateString('es-MX')}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">Total CFDI</p>
+                  <p className="font-mono font-bold text-slate-800">${factura.total?.toFixed(2)}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-slate-500 font-medium uppercase tracking-wide mb-1">Total OC</p>
+                  <p className="font-mono text-slate-600">${oc.total?.toFixed(2)}</p>
+                </div>
+              </div>
+              {factura.pdfUrl && (
+                <a href={factura.pdfUrl} target="_blank" rel="noreferrer"
+                  className="inline-block text-sm text-blue-600 hover:underline">
+                  Ver PDF de factura →
+                </a>
+              )}
+            </div>
+          )}
+
+          {/* Formulario de carga */}
+          {showCfdiForm && !factura && (
+            <form onSubmit={handleSubmitCfdi} className="p-6 space-y-6">
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">
+                  Archivo XML del CFDI <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="file"
+                  accept=".xml"
+                  required
+                  onChange={handleXmlFile}
+                  className="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-emerald-50 file:text-emerald-700 hover:file:bg-emerald-100"
+                />
+                {xmlError && <p className="mt-2 text-sm text-rose-600">{xmlError}</p>}
+              </div>
+
+              {/* Vista previa */}
+              {cfdiData && (
+                <div className="bg-slate-50 rounded-lg border border-slate-200 p-4 space-y-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-slate-500 mb-3">Vista previa — datos extraídos del XML</p>
+                  <div className="grid grid-cols-2 md:grid-cols-3 gap-4 text-sm">
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">UUID</p>
+                      <p className="font-mono text-xs text-slate-800 break-all">{cfdiData.uuid}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">RFC Emisor</p>
+                      <p className="font-mono text-slate-800">{cfdiData.rfcEmisor}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Fecha</p>
+                      <p className="text-slate-800">{cfdiData.fechaEmision?.slice(0, 10)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Subtotal</p>
+                      <p className="font-mono text-slate-800">${cfdiData.subtotal.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">IVA</p>
+                      <p className="font-mono text-slate-800">${cfdiData.iva.toFixed(2)}</p>
+                    </div>
+                    <div>
+                      <p className="text-xs text-slate-500 mb-1">Total</p>
+                      <p className={`font-mono font-bold ${Math.abs(cfdiData.total - oc.total) / oc.total > 0.05 ? 'text-amber-700' : 'text-emerald-700'}`}>
+                        ${cfdiData.total.toFixed(2)}
+                      </p>
+                    </div>
+                  </div>
+                  {Math.abs(cfdiData.total - oc.total) / oc.total > 0.05 && (
+                    <div className="mt-2 p-2 bg-amber-50 border border-amber-200 rounded text-xs text-amber-800">
+                      El total del CFDI difiere más del 5% del total de la OC (${oc.total.toFixed(2)}).
+                    </div>
+                  )}
+                  {cfdiData.rfcEmisor !== oc.supplier?.rfc && (
+                    <div className="mt-2 p-2 bg-rose-50 border border-rose-200 rounded text-xs text-rose-800">
+                      RFC del CFDI ({cfdiData.rfcEmisor}) no coincide con el proveedor ({oc.supplier?.rfc}).
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-2">URL del PDF (opcional)</label>
+                <input
+                  type="url"
+                  value={pdfUrl}
+                  onChange={e => setPdfUrl(e.target.value)}
+                  placeholder="https://..."
+                  className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
+                />
+              </div>
+
+              <div className="flex gap-3 justify-end">
+                <button
+                  type="button"
+                  onClick={() => { setShowCfdiForm(false); setCfdiData(null); setXmlError(''); }}
+                  className="px-4 py-2 text-sm text-slate-600 border border-slate-200 rounded hover:bg-slate-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCfdi || !cfdiData}
+                  className="px-5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-semibold rounded disabled:opacity-50"
+                >
+                  {savingCfdi ? 'Guardando...' : 'Registrar CFDI'}
+                </button>
+              </div>
+            </form>
+          )}
+
+          {/* Placeholder sin factura y sin form abierto */}
+          {!factura && !showCfdiForm && (
+            <div className="px-6 py-8 text-center text-slate-400 text-sm">
+              Sube el XML del CFDI una vez que el proveedor entregue la factura.
+            </div>
+          )}
+        </div>
+      )}
 
     </div>
   );

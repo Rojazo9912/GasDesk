@@ -83,42 +83,44 @@
 ## Semana 4 — Solicitudes de Compra (SC)
 
 ### Backend
-- ⏳ Módulo `purchase-requests` — CRUD completo
-- ⏳ Motor de aprobaciones: avanzar nivel, rechazar, escalar
-- ⏳ Job Bull: escalamiento automático por tiempo límite
-- ⏳ Notificaciones por correo (Resend) en cada cambio de estatus
+- ✅ Módulo `purchase-requests` — CRUD completo
+- ✅ Motor de aprobaciones: avanzar nivel, rechazar, escalar
+- ✅ Job Bull: escalamiento automático por tiempo límite (escalation.processor.ts)
+- ✅ Notificaciones por correo (Resend) en cada cambio de estatus
 
 ### Frontend
-- ⏳ Pantalla: **Lista de SC** (filtros por estatus, sucursal, período)
-- ⏳ Pantalla: **Nueva SC** (formulario con productos y adjunto)
-- ⏳ Pantalla: **Detalle SC** (historial de aprobaciones + acciones)
+- ✅ Pantalla: **Lista de SC** (filtros por estatus, sucursal, período)
+- ✅ Pantalla: **Nueva SC** (formulario con productos y adjunto)
+- ✅ Pantalla: **Detalle SC** (historial de aprobaciones + acciones)
 
 ---
 
 ## Semana 5 — Órdenes de Compra (OC)
 
 ### Backend
-- ⏳ Módulo `purchase-orders` — generar OC desde SC aprobada
-- ⏳ Generación de PDF (Puppeteer / pdf-lib)
-- ⏳ Envío de PDF al proveedor por correo (Resend)
+- ✅ Módulo `purchase-orders` — generar OC desde SC aprobada
+- ✅ Generación de PDF (window.print() para MVP, vista OC formateada)
+- ✅ Envío de PDF al proveedor por correo (Resend)
+- ✅ Campo `folio` autoincremental en PurchaseOrder
 
 ### Frontend
-- ⏳ Pantalla: **Lista de OC**
-- ⏳ Pantalla: **Nueva / Editar OC**
-- ⏳ Pantalla: **Detalle OC**
+- ✅ Pantalla: **Lista de OC**
+- ✅ Pantalla: **Nueva / Editar OC** (conversor SC → OC con precios)
+- ✅ Pantalla: **Detalle OC** (vista imprimible + envío a proveedor)
 
 ---
 
 ## Semana 6 — Facturas CFDI
 
 ### Backend
-- ⏳ Módulo `invoices` — upload XML y PDF
-- ⏳ Validación: RFC, monto vs OC (alerta > 5%), UUID duplicado
-- ⏳ Almacenamiento en Supabase Storage
+- ✅ Módulo `invoices` — POST /invoices, GET /invoices/orden/:id
+- ✅ Validación: RFC vs proveedor, monto vs OC (>5% → DIFERENCIA_MONTO), UUID duplicado
+- ✅ Almacenamiento en DB (xmlUrl/pdfUrl opcionales; XML parseado en frontend)
 
 ### Frontend
-- ⏳ Sección de factura dentro del Detalle OC
-- ⏳ Upload de XML + PDF con vista previa de validación
+- ✅ Sección CFDI dentro del Detalle OC (visible cuando OC ≠ BORRADOR)
+- ✅ Upload XML + DOMParser client-side + vista previa con alertas de validación
+- ✅ URL PDF opcional + registro en backend
 
 ---
 

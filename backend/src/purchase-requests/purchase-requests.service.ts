@@ -1,4 +1,6 @@
-import { Injectable, NotFoundException, BadRequestException, ForbiddenException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException, ForbiddenException, Optional } from '@nestjs/common';
+import { InjectQueue } from '@nestjs/bull';
+import type { Queue } from 'bull';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreatePurchaseRequestDto } from './dto/create-purchase-request.dto';
 import { EstatusSC } from '@prisma/client';
@@ -8,7 +10,10 @@ import { Resend } from 'resend';
 export class PurchaseRequestsService {
   private resend: Resend;
 
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    @Optional() @InjectQueue('escalations') private escalationsQueue?: Queue,
+  ) {
     this.resend = new Resend(process.env.RESEND_API_KEY || 're_123');
   }
 
@@ -26,10 +31,18 @@ export class PurchaseRequestsService {
     }
   }
 
+  private async scheduleEscalation(solicitudId: string, nivelActual: number, tiempoLimiteHrs: number | null) {
+    if (!this.escalationsQueue || !tiempoLimiteHrs) return;
+    await this.escalationsQueue.add(
+      'check-timeout',
+      { solicitudId, nivelActual },
+      { delay: tiempoLimiteHrs * 60 * 60 * 1000 },
+    );
+  }
+
   async create(createDto: CreatePurchaseRequestDto, user: any) {
     const { items, locationId, notas, adjuntoUrl } = createDto;
-    
-    // Obtener primer nivel de aprobacion
+
     const baseFlow = await this.prisma.approvalFlow.findFirst({
       where: { tenantId: user.tenantId, activo: true, nivelOrden: 1 },
       include: { aprobador: true }
@@ -39,8 +52,6 @@ export class PurchaseRequestsService {
       throw new BadRequestException('No hay un flujo de aprobación inicial activo (Nivel 1).');
     }
 
-    const estatusInicial = EstatusSC.PENDIENTE_NIVEL_1;
-
     const req = await this.prisma.purchaseRequest.create({
       data: {
         tenantId: user.tenantId,
@@ -48,7 +59,7 @@ export class PurchaseRequestsService {
         locationId,
         notas,
         adjuntoUrl,
-        estatus: estatusInicial,
+        estatus: EstatusSC.PENDIENTE_NIVEL_1,
         nivelActual: 1,
         items: {
           create: items.map(i => ({
@@ -71,18 +82,34 @@ export class PurchaseRequestsService {
 
     if (baseFlow.aprobador.email) {
       this.notifyUser(
-        baseFlow.aprobador.email, 
-        'Nueva Solicitud Pendiente', 
-        `Tienes una nueva Solicitud de Compra (ID: ${req.id}) pendiente de autorización.`
+        baseFlow.aprobador.email,
+        'Nueva Solicitud Pendiente',
+        `Tienes una nueva Solicitud de Compra (SC-${req.id.slice(0, 8).toUpperCase()}) pendiente de autorización.`
       );
     }
+
+    await this.scheduleEscalation(req.id, 1, baseFlow.tiempoLimiteHrs);
 
     return req;
   }
 
-  async findAll(tenantId: string) {
+  async findAll(tenantId: string, filters?: { estatus?: string; locationId?: string; desde?: string; hasta?: string }) {
+    const where: any = { tenantId };
+
+    if (filters?.estatus) {
+      where.estatus = filters.estatus;
+    }
+    if (filters?.locationId) {
+      where.locationId = filters.locationId;
+    }
+    if (filters?.desde || filters?.hasta) {
+      where.creadoEn = {};
+      if (filters.desde) where.creadoEn.gte = new Date(filters.desde);
+      if (filters.hasta) where.creadoEn.lte = new Date(filters.hasta);
+    }
+
     return this.prisma.purchaseRequest.findMany({
-      where: { tenantId },
+      where,
       include: {
         solicitante: { select: { nombre: true, email: true } },
         location: { select: { nombre: true, tipo: true } },
@@ -100,7 +127,7 @@ export class PurchaseRequestsService {
         location: true,
         items: { include: { product: true } },
         historial: {
-          include: { 
+          include: {
             aprobador: { select: { nombre: true, rol: true } },
             flow: { select: { nivelOrden: true, nombre: true } }
           },
@@ -113,36 +140,30 @@ export class PurchaseRequestsService {
     return req;
   }
 
-  // Avanzar un nivel o completarlo (hasta COMPRAS)
   async approve(id: string, comentario: string | undefined, user: any) {
     const solicitud = await this.findOne(id, user.tenantId);
-    
-    // Obtener flow actual basado en nivelActual
+
     const currentFlow = await this.prisma.approvalFlow.findFirst({
       where: { tenantId: user.tenantId, activo: true, nivelOrden: solicitud.nivelActual },
       include: { aprobador: true }
     });
 
     if (!currentFlow) throw new BadRequestException('El flujo actual ya no es válido.');
-    
-    // Validar autorización
+
     if (currentFlow.aprobadorId !== user.id && user.rol !== 'SUPER_ADMIN') {
       throw new ForbiddenException('No tienes permisos para aprobar este nivel.');
     }
 
-    // Identificar siguiente nivel
     const nextFlow = await this.prisma.approvalFlow.findFirst({
       where: { tenantId: user.tenantId, activo: true, nivelOrden: solicitud.nivelActual + 1 },
       include: { aprobador: true }
     });
 
     const isLastLevel = !nextFlow;
-    
-    let nuevoEstatus = isLastLevel ? EstatusSC.PENDIENTE_COMPRAS : (`PENDIENTE_NIVEL_${solicitud.nivelActual + 1}` as EstatusSC);
-    let nuevoNivel = isLastLevel ? solicitud.nivelActual : (solicitud.nivelActual + 1);
+    const nuevoEstatus = isLastLevel ? EstatusSC.PENDIENTE_COMPRAS : (`PENDIENTE_NIVEL_${solicitud.nivelActual + 1}` as EstatusSC);
+    const nuevoNivel = isLastLevel ? solicitud.nivelActual : (solicitud.nivelActual + 1);
 
     const tx = await this.prisma.$transaction(async (prisma) => {
-      // 1. Guardar historial (registro de que aprobó)
       await prisma.approvalHistory.create({
         data: {
           solicitudId: id,
@@ -153,7 +174,6 @@ export class PurchaseRequestsService {
         }
       });
 
-      // 2. Si no es el ultimo nivel, crear historial inicial para quien lo debe recibir
       if (nextFlow) {
         await prisma.approvalHistory.create({
           data: {
@@ -166,13 +186,9 @@ export class PurchaseRequestsService {
         });
       }
 
-      // 3. Actualizar Maestro
       return prisma.purchaseRequest.update({
         where: { id },
-        data: {
-          estatus: nuevoEstatus,
-          nivelActual: nuevoNivel
-        }
+        data: { estatus: nuevoEstatus, nivelActual: nuevoNivel }
       });
     });
 
@@ -180,12 +196,16 @@ export class PurchaseRequestsService {
       this.notifyUser(nextFlow.aprobador.email, 'Solicitud Avanzada', 'Una solicitud requiere tu aprobación ahora.');
     }
 
+    if (nextFlow) {
+      await this.scheduleEscalation(id, nuevoNivel, nextFlow.tiempoLimiteHrs);
+    }
+
     return tx;
   }
 
   async reject(id: string, comentario: string, user: any) {
     const solicitud = await this.findOne(id, user.tenantId);
-    
+
     const currentFlow = await this.prisma.approvalFlow.findFirst({
       where: { tenantId: user.tenantId, activo: true, nivelOrden: solicitud.nivelActual }
     });
@@ -211,26 +231,28 @@ export class PurchaseRequestsService {
 
       return prisma.purchaseRequest.update({
         where: { id },
-        data: {
-          estatus: EstatusSC.RECHAZADA
-        }
+        data: { estatus: EstatusSC.RECHAZADA }
       });
     });
 
     if (solicitud.solicitante.email) {
-      this.notifyUser(solicitud.solicitante.email, 'Solicitud Rechazada', `Tu solicitud ${id} fue rechazada por este motivo: ${comentario}`);
+      this.notifyUser(
+        solicitud.solicitante.email,
+        'Solicitud Rechazada',
+        `Tu solicitud SC-${id.slice(0, 8).toUpperCase()} fue rechazada: ${comentario}`
+      );
     }
 
     return tx;
   }
 
   async markAsCompleted(id: string, user: any) {
-      if (user.rol !== 'COMPRAS' && user.rol !== 'SUPER_ADMIN') {
-        throw new ForbiddenException('Sólo Compras puede finalizar la solicitud');
-      }
-      return this.prisma.purchaseRequest.update({
-        where: { id, tenantId: user.tenantId },
-        data: { estatus: EstatusSC.COMPLETADA }
-      });
+    if (user.rol !== 'COMPRAS' && user.rol !== 'SUPER_ADMIN') {
+      throw new ForbiddenException('Sólo Compras puede finalizar la solicitud');
+    }
+    return this.prisma.purchaseRequest.update({
+      where: { id, tenantId: user.tenantId },
+      data: { estatus: EstatusSC.COMPLETADA }
+    });
   }
 }

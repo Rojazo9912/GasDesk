@@ -9,6 +9,7 @@ import { ApprovalFlowsModule } from './approval-flows/approval-flows.module';
 import { PurchaseRequestsModule } from './purchase-requests/purchase-requests.module';
 import { SuppliersModule } from './suppliers/suppliers.module';
 import { PurchaseOrdersModule } from './purchase-orders/purchase-orders.module';
+import { InvoicesModule } from './invoices/invoices.module';
 import { BullModule } from '@nestjs/bull';
 
 @Module({
@@ -23,6 +24,7 @@ import { BullModule } from '@nestjs/bull';
     PurchaseRequestsModule,
     SuppliersModule,
     PurchaseOrdersModule,
+    InvoicesModule,
     ...(process.env.REDIS_URL ? [BullModule.forRoot({ redis: process.env.REDIS_URL })] : [])
   ],
   controllers: [],

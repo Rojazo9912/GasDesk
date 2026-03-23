@@ -103,7 +103,7 @@ const NuevaOrden = () => {
       <div className="flex justify-between items-center bg-white p-4 rounded border border-slate-200 shadow-sm">
         <div>
            <h1 className="text-xl font-bold text-slate-800">Cerrar Cotización y Generar OC</h1>
-           <p className="text-sm text-slate-500">Basado en la Solicitud SC-{solicitud.folio?.toString().padStart(4, '0')}</p>
+           <p className="text-sm text-slate-500">Basado en la Solicitud SC-{solicitud.id?.slice(0, 8).toUpperCase()}</p>
         </div>
         <button onClick={() => navigate(-1)} className="text-sm text-slate-500 hover:text-slate-800">Cancelar</button>
       </div>
