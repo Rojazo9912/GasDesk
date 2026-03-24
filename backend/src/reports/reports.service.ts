@@ -232,7 +232,7 @@ export class ReportsService {
 
     ws.getColumn('montoTotal').numFmt = '"$"#,##0.00';
 
-    return wb.xlsx.writeBuffer() as unknown as Promise<Buffer>;
+    return (wb.xlsx.writeBuffer() as unknown) as Promise<Buffer>;
   }
 
   async getScPorEstatusExcel(tenantId: string): Promise<Buffer> {
@@ -253,7 +253,7 @@ export class ReportsService {
       ws.addRow({ estatus: row.estatus, total: row.total });
     }
 
-    return wb.xlsx.writeBuffer() as unknown as Promise<Buffer>;
+    return (wb.xlsx.writeBuffer() as unknown) as Promise<Buffer>;
   }
 
   async getOcRecientesExcel(tenantId: string): Promise<Buffer> {
@@ -287,6 +287,6 @@ export class ReportsService {
 
     ws.getColumn('total').numFmt = '"$"#,##0.00';
 
-    return wb.xlsx.writeBuffer() as unknown as Promise<Buffer>;
+    return (wb.xlsx.writeBuffer() as unknown) as Promise<Buffer>;
   }
 }

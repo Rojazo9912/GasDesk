@@ -3,7 +3,6 @@ import { ReportsService } from './reports.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/permissions.constants';
-import { Response } from 'express';
 
 @Controller('reports')
 export class ReportsController {
