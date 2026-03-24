@@ -181,7 +181,7 @@ const NuevaOrden = () => {
            </div>
 
            <div className="mt-6 flex justify-end">
-             <div className="w-64 space-y-3">
+             <div className="w-full sm:w-64 space-y-3">
                 <div className="flex justify-between text-sm text-slate-600">
                   <span>Subtotal:</span>
                   <span className="font-mono">${subtotal.toFixed(2)}</span>

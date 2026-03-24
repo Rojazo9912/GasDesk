@@ -40,16 +40,14 @@ const ListaOrdenes = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Órdenes de Compra</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Órdenes de Compra</h1>
           <p className="text-sm text-slate-500 mt-1">Controla las compras autorizadas enviadas a los proveedores.</p>
         </div>
-        {/* Usualmente las OC se crean desde una SC autorizada, no manual, 
-            pero podemos dejar el flujo de "Nueva" por si acaso o bloquearlo */}
-        <Link 
-          to="/solicitudes" 
-          className="bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
+        <Link
+          to="/solicitudes"
+          className="self-start sm:self-auto bg-slate-800 hover:bg-slate-900 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
         >
            Convertir Desde Solicitud →
         </Link>

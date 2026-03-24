@@ -216,20 +216,20 @@ const DetalleOrden = () => {
     <div className="max-w-5xl mx-auto space-y-6">
 
       {/* Header */}
-      <div className="flex justify-between items-center bg-white p-4 rounded border border-slate-200 shadow-sm">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-white p-4 rounded border border-slate-200 shadow-sm">
+        <div className="flex flex-wrap items-center gap-2">
           <button onClick={() => navigate('/ordenes')} className="text-slate-400 hover:text-slate-800 font-bold px-2 py-1 rounded hover:bg-slate-100">←</button>
           {user?.tenant?.logo && (
-            <img src={user.tenant.logo} alt="logo" className="h-10 object-contain max-w-[80px]" />
+            <img src={user.tenant.logo} alt="logo" className="h-8 object-contain max-w-[60px]" />
           )}
-          <h1 className="text-xl font-bold text-slate-800">OC-{oc.folio?.toString().padStart(4, '0') || 'N/A'}</h1>
-          <span className="px-3 py-1 bg-blue-100 text-blue-800 text-xs font-bold uppercase rounded border border-blue-200">
+          <h1 className="text-lg sm:text-xl font-bold text-slate-800">OC-{oc.folio?.toString().padStart(4, '0') || 'N/A'}</h1>
+          <span className="px-2.5 py-1 bg-blue-100 text-blue-800 text-xs font-bold uppercase rounded border border-blue-200">
             {oc.estatus.replace(/_/g, ' ')}
           </span>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button
-            className="px-4 py-2 border border-slate-200 text-slate-600 rounded bg-slate-50 hover:bg-slate-100 text-sm font-semibold transition shadow-sm"
+            className="px-3 py-2 border border-slate-200 text-slate-600 rounded bg-slate-50 hover:bg-slate-100 text-sm font-semibold transition shadow-sm"
             onClick={() => window.print()}
           >
             Imprimir Local
@@ -238,9 +238,9 @@ const DetalleOrden = () => {
             <button
               onClick={handleSendSupplier}
               disabled={sending}
-              className="px-4 py-2 bg-slate-800 text-white rounded font-bold hover:bg-slate-900 shadow-sm transition text-sm disabled:opacity-50"
+              className="px-3 py-2 bg-slate-800 text-white rounded font-bold hover:bg-slate-900 shadow-sm transition text-sm disabled:opacity-50"
             >
-              {sending ? 'Enviando...' : 'Enviar Autorización al Proveedor'}
+              {sending ? 'Enviando...' : 'Enviar al Proveedor'}
             </button>
           )}
         </div>
@@ -263,7 +263,7 @@ const DetalleOrden = () => {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-10 mb-8 max-w-3xl">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 md:gap-10 mb-8 max-w-3xl">
             <div>
               <h4 className="text-xs font-bold tracking-widest text-slate-400 uppercase mb-2">Proveedor Destino</h4>
               <div className="font-bold text-slate-800">{oc.supplier?.nombre}</div>

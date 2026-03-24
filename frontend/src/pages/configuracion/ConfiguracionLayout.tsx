@@ -20,8 +20,8 @@ const ConfiguracionLayout = () => {
         <p className="text-slate-500 mt-1">Administra los detalles de tu empresa, sucursales y equipo.</p>
       </div>
 
-      <div className="px-6 border-b border-slate-200">
-        <nav className="-mb-px flex space-x-8">
+      <div className="px-4 md:px-6 border-b border-slate-200 overflow-x-auto">
+        <nav className="-mb-px flex space-x-4 md:space-x-8">
           {tabs.map((tab) => {
             const isActive = location.pathname.startsWith(tab.path);
             return (
@@ -42,7 +42,7 @@ const ConfiguracionLayout = () => {
         </nav>
       </div>
 
-      <div className="p-6 flex-1 overflow-auto bg-slate-50">
+      <div className="p-4 md:p-6 flex-1 overflow-auto bg-slate-50">
         <Outlet />
       </div>
     </div>

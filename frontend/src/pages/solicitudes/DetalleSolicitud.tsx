@@ -109,22 +109,20 @@ const DetalleSolicitud = () => {
 
   return (
     <div className="max-w-5xl mx-auto space-y-6">
-      <div className="flex justify-between items-center bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 bg-white p-4 rounded-lg border border-slate-200 shadow-sm">
         <div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2">
             {user?.tenant?.logo && (
-              <img src={user.tenant.logo} alt="logo" className="h-10 object-contain max-w-[80px]" />
+              <img src={user.tenant.logo} alt="logo" className="h-8 object-contain max-w-[60px]" />
             )}
-            <h1 className="text-2xl font-bold text-slate-800">SC-{solicitud.id?.slice(0, 8).toUpperCase()}</h1>
-            <span className="px-3 py-1 bg-slate-100 text-slate-700 text-sm font-semibold rounded-full border border-slate-200">
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">SC-{solicitud.id?.slice(0, 8).toUpperCase()}</h1>
+            <span className="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full border border-slate-200">
               {solicitud.estatus}
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">Solicitado por {solicitud.solicitante.nombre} el {new Date(solicitud.creadoEn).toLocaleDateString()}</p>
         </div>
-        <div>
-           <button onClick={() => navigate('/solicitudes')} className="text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">← Volver</button>
-        </div>
+        <button onClick={() => navigate('/solicitudes')} className="self-start sm:self-auto text-sm font-medium text-slate-500 hover:text-slate-800 transition-colors">← Volver</button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -132,7 +130,7 @@ const DetalleSolicitud = () => {
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white rounded-lg border border-slate-200 p-6 shadow-sm">
             <h3 className="text-lg font-semibold text-slate-800 mb-4 border-b border-slate-100 pb-2">Información General</h3>
-            <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm mb-4">
               <div>
                 <span className="block text-slate-500 mb-1">Sucursal de Destino</span>
                 <span className="font-medium text-slate-800">{solicitud.location?.nombre}</span>

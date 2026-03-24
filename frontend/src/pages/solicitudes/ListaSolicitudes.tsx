@@ -94,14 +94,14 @@ const ListaSolicitudes = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Solicitudes de Compra</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Solicitudes de Compra</h1>
           <p className="text-sm text-slate-500 mt-1">Monitorea y autoriza las peticiones de material de las estaciones.</p>
         </div>
         <Link
           to="/solicitudes/nueva"
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
+          className="self-start sm:self-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
         >
           + Nueva Solicitud
         </Link>

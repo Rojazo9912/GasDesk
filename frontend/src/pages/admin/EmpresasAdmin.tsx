@@ -92,20 +92,21 @@ const EmpresasAdmin = () => {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Empresas</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Empresas</h1>
           <p className="text-sm text-slate-500 mt-1">Administra las empresas registradas en GasDesk.</p>
         </div>
         <button
           onClick={() => { setForm(emptyForm); setLogoFile(null); setLogoPreview(null); setModalOpen(true); }}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
+          className="self-start sm:self-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
         >
           + Nueva Empresa
         </button>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+        <div className="overflow-x-auto">
         <table className="w-full text-sm text-left">
           <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
             <tr>
@@ -153,6 +154,7 @@ const EmpresasAdmin = () => {
             )}
           </tbody>
         </table>
+        </div>
       </div>
 
       {modalOpen && (
