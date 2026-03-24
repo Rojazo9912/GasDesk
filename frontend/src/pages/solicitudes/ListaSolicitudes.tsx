@@ -14,19 +14,22 @@ const ESTATUS_OPTIONS = [
   { value: 'CANCELADA', label: 'Cancelada' },
 ];
 
-const estatusColor = (estatus: string) => {
+type EstatusBadge = { emoji: string; label: string; className: string };
+
+const getEstatusBadge = (estatus: string): EstatusBadge => {
   switch (estatus) {
-    case 'BORRADOR': return 'bg-slate-100 text-slate-700';
-    case 'PENDIENTE_COMPRAS': return 'bg-amber-100 text-amber-700';
-    case 'EN_PROCESO': return 'bg-blue-100 text-blue-700';
-    case 'COMPLETADA': return 'bg-emerald-100 text-emerald-700';
-    case 'RECHAZADA': return 'bg-rose-100 text-rose-700';
-    case 'CANCELADA': return 'bg-slate-200 text-slate-500';
+    case 'BORRADOR':         return { emoji: '📝', label: 'Borrador',          className: 'bg-slate-100 text-slate-600 border-slate-200' };
+    case 'PENDIENTE_COMPRAS':return { emoji: '🛒', label: 'Pend. Compras',     className: 'bg-amber-50 text-amber-700 border-amber-200' };
+    case 'EN_PROCESO':       return { emoji: '⚙️', label: 'En Proceso',        className: 'bg-blue-50 text-blue-700 border-blue-200' };
+    case 'COMPLETADA':       return { emoji: '✅', label: 'Completada',        className: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    case 'RECHAZADA':        return { emoji: '❌', label: 'Rechazada',         className: 'bg-rose-50 text-rose-700 border-rose-200' };
+    case 'CANCELADA':        return { emoji: '🚫', label: 'Cancelada',         className: 'bg-slate-100 text-slate-500 border-slate-200' };
     default:
       if (estatus.startsWith('PENDIENTE_NIVEL')) {
-        return 'bg-amber-100 text-amber-700 border border-amber-200';
+        const nivel = estatus.replace('PENDIENTE_NIVEL_', '');
+        return { emoji: '⏳', label: `Nivel ${nivel}`, className: 'bg-amber-50 text-amber-700 border-amber-200' };
       }
-      return 'bg-slate-100 text-slate-700';
+      return { emoji: '❓', label: estatus.replace(/_/g, ' '), className: 'bg-slate-100 text-slate-600 border-slate-200' };
   }
 };
 
@@ -93,42 +96,53 @@ const ListaSolicitudes = () => {
     });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-slate-800">Solicitudes de Compra</h1>
-          <p className="text-sm text-slate-500 mt-1">Monitorea y autoriza las peticiones de material de las estaciones.</p>
+          <p className="text-sm text-slate-500 mt-0.5">Monitorea y autoriza las peticiones de material de las estaciones.</p>
         </div>
         <Link
           to="/solicitudes/nueva"
-          className="self-start sm:self-auto bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-md font-medium text-sm transition-colors"
+          className="self-start sm:self-auto inline-flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white px-4 py-2 rounded-lg font-medium text-sm transition-all duration-200 shadow-sm shadow-emerald-600/30 hover:shadow-emerald-600/40 hover:-translate-y-0.5"
         >
-          + Nueva Solicitud
+          ✍️ Nueva Solicitud
         </Link>
       </div>
 
       {/* Filtros */}
-      <div className="bg-white rounded-lg border border-slate-200 p-4">
+      <div className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm">
+        <div className="flex items-center gap-2 mb-3">
+          <span className="text-sm font-semibold text-slate-600">🔍 Filtros</span>
+          {hayFiltros && (
+            <button
+              onClick={limpiarFiltros}
+              className="text-xs text-rose-500 hover:text-rose-700 font-medium ml-auto transition-colors"
+            >
+              ✕ Limpiar filtros
+            </button>
+          )}
+        </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Estatus</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Estatus</label>
             <select
               value={filtroEstatus}
               onChange={e => setFiltroEstatus(e.target.value)}
-              className="w-full text-sm border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50 transition-all"
             >
               {ESTATUS_OPTIONS.map(o => (
                 <option key={o.value} value={o.value}>{o.label}</option>
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Estación / Sucursal</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Estación / Sucursal</label>
             <select
               value={filtroLocation}
               onChange={e => setFiltroLocation(e.target.value)}
-              className="w-full text-sm border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50 transition-all"
             >
               <option value="">Todas las estaciones</option>
               {locationOptions.map(l => (
@@ -136,96 +150,104 @@ const ListaSolicitudes = () => {
               ))}
             </select>
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Desde</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Desde</label>
             <input
               type="date"
               value={filtroDesde}
               onChange={e => setFiltroDesde(e.target.value)}
-              className="w-full text-sm border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50 transition-all"
             />
           </div>
-
           <div>
-            <label className="block text-xs font-medium text-slate-600 mb-1">Hasta</label>
+            <label className="block text-xs font-medium text-slate-500 mb-1">Hasta</label>
             <input
               type="date"
               value={filtroHasta}
               onChange={e => setFiltroHasta(e.target.value)}
-              className="w-full text-sm border border-slate-300 rounded-md px-3 py-2 focus:outline-none focus:ring-1 focus:ring-emerald-500"
+              className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-slate-50 transition-all"
             />
           </div>
         </div>
-
         {hayFiltros && (
-          <div className="mt-3 flex items-center gap-3">
+          <div className="mt-3 pt-3 border-t border-slate-100 flex items-center gap-2">
             <span className="text-xs text-slate-500">
-              {solicitudesFiltradas.length} de {solicitudes.length} solicitudes
+              Mostrando <span className="font-bold text-slate-700">{solicitudesFiltradas.length}</span> de {solicitudes.length} solicitudes
             </span>
-            <button
-              onClick={limpiarFiltros}
-              className="text-xs text-emerald-600 hover:text-emerald-800 font-medium"
-            >
-              Limpiar filtros
-            </button>
           </div>
         )}
       </div>
 
       {/* Tabla */}
-      <div className="bg-white rounded-lg shadow-sm border border-slate-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left">
             <thead className="text-xs text-slate-500 uppercase bg-slate-50 border-b border-slate-200">
               <tr>
-                <th className="px-6 py-4 font-medium">Folio / Fecha</th>
-                <th className="px-6 py-4 font-medium">Estación</th>
-                <th className="px-6 py-4 font-medium">Solicitante</th>
-                <th className="px-6 py-4 font-medium">Artículos</th>
-                <th className="px-6 py-4 font-medium">Estatus</th>
-                <th className="px-6 py-4 text-right font-medium">Acción</th>
+                <th className="px-5 py-3.5 font-semibold">Folio / Fecha</th>
+                <th className="px-5 py-3.5 font-semibold">📍 Estación</th>
+                <th className="px-5 py-3.5 font-semibold">👤 Solicitante</th>
+                <th className="px-5 py-3.5 font-semibold">Artículos</th>
+                <th className="px-5 py-3.5 font-semibold">Estatus</th>
+                <th className="px-5 py-3.5 text-right font-semibold">Acción</th>
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-slate-100">
               {loading ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">Cargando solicitudes...</td>
+                  <td colSpan={6} className="px-5 py-10 text-center">
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <span className="text-3xl animate-bounce">⏳</span>
+                      <span className="text-sm">Cargando solicitudes...</span>
+                    </div>
+                  </td>
                 </tr>
               ) : solicitudesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-slate-500">
-                    {hayFiltros ? 'Sin resultados para los filtros aplicados.' : 'No hay solicitudes creadas aún.'}
+                  <td colSpan={6} className="px-5 py-10 text-center">
+                    <div className="flex flex-col items-center gap-2 text-slate-400">
+                      <span className="text-3xl">📭</span>
+                      <span className="text-sm">{hayFiltros ? 'Sin resultados para los filtros aplicados.' : 'No hay solicitudes creadas aún.'}</span>
+                    </div>
                   </td>
                 </tr>
               ) : (
-                solicitudesFiltradas.map((req) => (
-                  <tr key={req.id} className="border-b border-slate-100 hover:bg-slate-50/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="font-semibold text-slate-800">{formatarFolio(req.id)}</div>
-                      <div className="text-xs text-slate-500 mt-1">{formatearFecha(req.creadoEn)}</div>
-                    </td>
-                    <td className="px-6 py-4 font-medium text-slate-700">
-                      {req.location?.nombre || 'General'}
-                    </td>
-                    <td className="px-6 py-4 text-slate-700">
-                      {req.solicitante?.nombre}
-                    </td>
-                    <td className="px-6 py-4">
-                      {req.items?.length || 0} items
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`px-2.5 py-1 text-xs font-semibold rounded-full ${estatusColor(req.estatus)}`}>
-                        {req.estatus.replace(/_/g, ' ')}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <Link to={`/solicitudes/${req.id}`} className="text-emerald-600 hover:text-emerald-800 font-medium text-sm">
-                        Ver detalle →
-                      </Link>
-                    </td>
-                  </tr>
-                ))
+                solicitudesFiltradas.map((req) => {
+                  const badge = getEstatusBadge(req.estatus);
+                  return (
+                    <tr key={req.id} className="hover:bg-slate-50/80 transition-colors duration-150">
+                      <td className="px-5 py-3.5">
+                        <div className="font-bold text-slate-800 font-mono text-xs">{formatarFolio(req.id)}</div>
+                        <div className="text-xs text-slate-400 mt-0.5">{formatearFecha(req.creadoEn)}</div>
+                      </td>
+                      <td className="px-5 py-3.5 font-medium text-slate-700">
+                        {req.location?.nombre || 'General'}
+                      </td>
+                      <td className="px-5 py-3.5 text-slate-600">
+                        {req.solicitante?.nombre}
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className="inline-flex items-center gap-1 text-slate-500">
+                          <span className="font-semibold text-slate-700">{req.items?.length || 0}</span> items
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5">
+                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-semibold rounded-full border ${badge.className}`}>
+                          <span>{badge.emoji}</span>
+                          <span>{badge.label}</span>
+                        </span>
+                      </td>
+                      <td className="px-5 py-3.5 text-right">
+                        <Link
+                          to={`/solicitudes/${req.id}`}
+                          className="inline-flex items-center gap-1 text-emerald-600 hover:text-emerald-800 font-semibold text-xs bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-lg border border-emerald-200 transition-all duration-200"
+                        >
+                          Ver detalle →
+                        </Link>
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

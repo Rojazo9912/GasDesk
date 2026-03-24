@@ -4,24 +4,24 @@ const ConfiguracionLayout = () => {
   const location = useLocation();
 
   const tabs = [
-    { name: 'Mi Empresa', path: '/configuracion/empresa' },
-    { name: 'Sucursales', path: '/configuracion/sucursales' },
-    { name: 'Usuarios y roles', path: '/configuracion/usuarios' },
-    { name: 'Flujos de Aprobación', path: '/configuracion/flujos' },
-    { name: 'Proveedores', path: '/configuracion/proveedores' },
-    { name: 'Departamentos', path: '/configuracion/departamentos' },
-    { name: 'Perfiles', path: '/configuracion/perfiles' },
+    { name: 'Mi Empresa',          emoji: '🏢', path: '/configuracion/empresa' },
+    { name: 'Sucursales',          emoji: '📍', path: '/configuracion/sucursales' },
+    { name: 'Usuarios',            emoji: '👥', path: '/configuracion/usuarios' },
+    { name: 'Flujos',              emoji: '🔄', path: '/configuracion/flujos' },
+    { name: 'Proveedores',         emoji: '🤝', path: '/configuracion/proveedores' },
+    { name: 'Departamentos',       emoji: '🏗️', path: '/configuracion/departamentos' },
+    { name: 'Perfiles',            emoji: '🪪', path: '/configuracion/perfiles' },
   ];
 
   return (
-    <div className="flex flex-col h-full bg-white rounded-lg shadow-sm border border-slate-200">
-      <div className="p-6 border-b border-slate-200">
-        <h1 className="text-2xl font-bold text-slate-800">Configuración</h1>
-        <p className="text-slate-500 mt-1">Administra los detalles de tu empresa, sucursales y equipo.</p>
+    <div className="flex flex-col h-full bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
+      <div className="px-6 py-5 border-b border-slate-100 bg-gradient-to-r from-slate-50 to-white">
+        <h1 className="text-xl font-bold text-slate-800">⚙️ Configuración</h1>
+        <p className="text-slate-500 mt-0.5 text-sm">Administra los detalles de tu empresa, sucursales y equipo.</p>
       </div>
 
-      <div className="px-4 md:px-6 border-b border-slate-200 overflow-x-auto">
-        <nav className="-mb-px flex space-x-4 md:space-x-8">
+      <div className="px-4 md:px-6 border-b border-slate-200 overflow-x-auto bg-white">
+        <nav className="-mb-px flex gap-1">
           {tabs.map((tab) => {
             const isActive = location.pathname.startsWith(tab.path);
             return (
@@ -29,13 +29,15 @@ const ConfiguracionLayout = () => {
                 key={tab.name}
                 to={tab.path}
                 className={`
-                  whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors
-                  ${isActive 
-                    ? 'border-emerald-500 text-emerald-600' 
+                  whitespace-nowrap py-3.5 px-3 border-b-2 font-medium text-sm transition-all duration-200
+                  flex items-center gap-1.5
+                  ${isActive
+                    ? 'border-emerald-500 text-emerald-600'
                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'}
                 `}
               >
-                {tab.name}
+                <span className="text-base">{tab.emoji}</span>
+                <span>{tab.name}</span>
               </Link>
             );
           })}
