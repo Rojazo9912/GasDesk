@@ -6,6 +6,8 @@ import { getPurchaseOrderById, sendPurchaseOrderEmail } from '../../services/pur
 import { getInvoiceByOrden, createInvoice } from '../../services/invoices.service';
 import { getReceptionsByOrden, createReception } from '../../services/receptions.service';
 import ConfirmModal from '../../components/shared/ConfirmModal';
+import FileUpload from '../../components/shared/FileUpload';
+import { supabase } from '../../lib/supabase';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -83,6 +85,7 @@ const DetalleOrden = () => {
   const [factura, setFactura] = useState<any>(null);
   const [cfdiData, setCfdiData] = useState<CfdiData | null>(null);
   const [pdfUrl, setPdfUrl] = useState('');
+  const [xmlUrl, setXmlUrl] = useState('');
   const [xmlError, setXmlError] = useState('');
   const [savingCfdi, setSavingCfdi] = useState(false);
   const [showCfdiForm, setShowCfdiForm] = useState(false);
@@ -133,14 +136,16 @@ const DetalleOrden = () => {
     });
   };
 
-  const handleXmlFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleXmlFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
     setXmlError('');
     setCfdiData(null);
+    setXmlUrl('');
     const file = e.target.files?.[0];
     if (!file) return;
 
+    // 1. Validar y parsear localmente para preview
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const text = ev.target?.result as string;
       const parsed = parseCfdiXml(text);
       if (!parsed) {
@@ -148,6 +153,18 @@ const DetalleOrden = () => {
         return;
       }
       setCfdiData(parsed);
+
+      // 2. Subir a Supabase
+      try {
+        if (!supabase) throw new Error('Supabase no configurado');
+        const path = `${user?.tenantId}/invoices/${new Date().getFullYear()}/${parsed.uuid}.xml`;
+        const { error } = await supabase.storage.from('invoices').upload(path, file, { upsert: true });
+        if (error) throw error;
+        const { data: urlData } = supabase.storage.from('invoices').getPublicUrl(path);
+        setXmlUrl(urlData.publicUrl);
+      } catch (err: any) {
+        toast.error('Error al subir XML: ' + err.message);
+      }
     };
     reader.readAsText(file);
   };
@@ -165,11 +182,13 @@ const DetalleOrden = () => {
         subtotal: cfdiData.subtotal,
         iva: cfdiData.iva,
         total: cfdiData.total,
+        xmlUrl: xmlUrl || undefined,
         pdfUrl: pdfUrl || undefined,
       });
       setFactura(saved);
       setShowCfdiForm(false);
       setCfdiData(null);
+      setXmlUrl('');
       setPdfUrl('');
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Error al registrar CFDI');
@@ -445,15 +464,22 @@ const DetalleOrden = () => {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-semibold text-slate-700 mb-2">URL del PDF (opcional)</label>
-                <input
-                  type="url"
-                  value={pdfUrl}
-                  onChange={e => setPdfUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full border border-slate-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-emerald-500"
-                />
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-semibold text-slate-700 mb-2">Archivo PDF de Factura</label>
+                  <FileUpload 
+                    bucket="invoices"
+                    pathPrefix={`${user?.tenantId}/invoices/${new Date().getFullYear()}`}
+                    allowedTypes={['application/pdf']}
+                    label="Subir PDF"
+                    onUpload={setPdfUrl}
+                  />
+                </div>
+                {pdfUrl && (
+                  <div className="flex items-end pb-2">
+                    <span className="text-xs text-emerald-600 font-medium">✓ PDF listo</span>
+                  </div>
+                )}
               </div>
 
               <div className="flex gap-3 justify-end">

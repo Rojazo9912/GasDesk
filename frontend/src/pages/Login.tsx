@@ -21,8 +21,8 @@ const Login = () => {
     try {
       const response = await api.post('/auth/login', { email, password });
       
-      const { user, accessToken } = response.data;
-      login(user, accessToken);
+      const { user, accessToken, refreshToken } = response.data;
+      login(user, accessToken, refreshToken);
 
       const from = location.state?.from?.pathname || '/';
       navigate(from, { replace: true });

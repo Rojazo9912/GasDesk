@@ -96,6 +96,8 @@ model Tenant {
   quotations       Quotation[]
   budgets          Budget[]
   notifications    Notification[]
+  auditLogs        AuditLog[]
+  supplierPrices   SupplierPrice[]
 }
 
 // ─── Departments ──────────────────────────────────────────────────────────────
@@ -137,6 +139,8 @@ model User {
   flujosComoAprobador    ApprovalFlow[]    @relation("Aprobador")
   flujosComoAlterno      ApprovalFlow[]    @relation("Alterno")
   notifications          Notification[]
+  refreshTokens          RefreshToken[]
+  auditLogs              AuditLog[]
 }
 
 // ─── Perfiles ─────────────────────────────────────────────────────────────────
@@ -227,6 +231,7 @@ model Product {
   deptInventario  DepartmentInventory[]
   deptMovimientos DepartmentMovement[]
   quotacionItems  QuotationItem[]
+  supplierPrices  SupplierPrice[]
 }
 
 model Inventory {
@@ -271,6 +276,7 @@ model Supplier {
   tenant      Tenant          @relation(fields: [tenantId], references: [id])
   ordenes     PurchaseOrder[]
   quotations  Quotation[]
+  prices      SupplierPrice[]
 
   @@unique([tenantId, rfc])
 }
@@ -491,4 +497,48 @@ model Notification {
 
   tenant Tenant @relation(fields: [tenantId], references: [id])
   user   User   @relation(fields: [userId], references: [id])
+}
+
+// ─── Security & Audit ────────────────────────────────────────────────────────
+
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  revocado  Boolean  @default(false)
+  creadoEn  DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model AuditLog {
+  id                String   @id @default(uuid())
+  tenantId          String
+  userId            String?
+  entidad           String
+  entidadId         String
+  accion            String // "CREATE" | "UPDATE" | "DELETE"
+  camposModificados Json?
+  fecha             DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User?  @relation(fields: [userId], references: [id])
+}
+
+model SupplierPrice {
+  id         String   @id @default(uuid())
+  tenantId   String
+  supplierId String
+  productId  String
+  precio     Float
+  moneda     String   @default("MXN")
+  fecha      DateTime @default(now())
+  notas      String?
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  supplier Supplier @relation(fields: [supplierId], references: [id])
+  product  Product  @relation(fields: [productId], references: [id])
+
+  @@index([tenantId, supplierId, productId])
 }

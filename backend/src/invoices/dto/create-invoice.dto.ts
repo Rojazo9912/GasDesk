@@ -27,5 +27,9 @@ export class CreateInvoiceDto {
 
   @IsOptional()
   @IsString()
+  xmlUrl?: string;
+
+  @IsOptional()
+  @IsString()
   pdfUrl?: string;
 }

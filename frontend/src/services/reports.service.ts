@@ -19,3 +19,18 @@ export const getOCRecientes = async () => {
   const { data } = await api.get('/reports/oc-recientes');
   return data;
 };
+
+export const getSpendingTrend = async () => {
+  const { data } = await api.get('/reports/trend');
+  return data;
+};
+
+export const getTopSuppliers = async () => {
+  const { data } = await api.get('/reports/top-suppliers');
+  return data;
+};
+
+export const getApprovalTime = async () => {
+  const { data } = await api.get('/reports/approval-time');
+  return data;
+};

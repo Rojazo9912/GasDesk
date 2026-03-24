@@ -5,6 +5,8 @@ import * as bcrypt from 'bcrypt';
 import * as crypto from 'crypto';
 import { Resend } from 'resend';
 import { LoginDto } from './dto/login.dto';
+import { ROLE_PERMISSIONS } from './constants/permissions.constants';
+import { Rol } from '@prisma/client';
 
 @Injectable()
 export class AuthService {
@@ -38,20 +40,17 @@ export class AuthService {
       throw new UnauthorizedException('La empresa se encuentra inactiva');
     }
 
-    const payload = {
-      sub: user.id,
-      email: user.email,
-      rol: user.rol,
-      tenantId: user.tenantId,
-    };
+    const tokens = await this.generateTokens(user);
+    const permissions = ROLE_PERMISSIONS[user.rol as Rol] || [];
 
     return {
-      accessToken: this.jwtService.sign(payload),
+      ...tokens,
       user: {
         id: user.id,
         nombre: user.nombre,
         email: user.email,
         rol: user.rol,
+        permissions,
         tenantId: user.tenantId,
         tenant: {
           id: user.tenant.id,
@@ -60,6 +59,65 @@ export class AuthService {
         },
       },
     };
+  }
+
+  async generateTokens(user: any) {
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      rol: user.rol,
+      tenantId: user.tenantId,
+    };
+
+    // Access token corto (p.ej. 15 min si estuviera configurado así, o el default actual)
+    const accessToken = this.jwtService.sign(payload);
+
+    // Refresh token opaco (UUID)
+    const refreshToken = crypto.randomBytes(40).toString('hex');
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 días de validez
+
+    await (this.prisma as any).refreshToken.create({
+      data: {
+        token: refreshToken,
+        userId: user.id,
+        expiresAt,
+      },
+    });
+
+    return {
+      accessToken,
+      refreshToken,
+    };
+  }
+
+  async refresh(token: string) {
+    const storedToken = await (this.prisma as any).refreshToken.findUnique({
+      where: { token },
+      include: { user: { include: { tenant: true } } },
+    });
+
+    if (!storedToken || storedToken.revocado || storedToken.expiresAt < new Date()) {
+      if (storedToken) {
+        await (this.prisma as any).refreshToken.delete({ where: { id: (storedToken as any).id } });
+      }
+      throw new UnauthorizedException('Refresh token inválido o expirado');
+    }
+
+    // Revocar el anterior (Rotación de tokens)
+    await (this.prisma as any).refreshToken.delete({ where: { id: (storedToken as any).id } });
+
+    // Generar nuevos
+    return this.generateTokens((storedToken as any).user);
+  }
+
+  async logout(token: string) {
+    try {
+      await (this.prisma as any).refreshToken.delete({ where: { token } });
+    } catch (e) {
+      // Ignorar si no existe
+    }
+    return { message: 'Sesión cerrada' };
   }
 
   async forgotPassword(email: string) {

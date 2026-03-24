@@ -2,16 +2,20 @@ import { Controller, Get, Post, Body, Param, Query } from '@nestjs/common';
 import { PurchaseRequestsService } from './purchase-requests.service';
 import { CreatePurchaseRequestDto } from './dto/create-purchase-request.dto';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/permissions.constants';
 
 @Controller('purchase-requests')
 export class PurchaseRequestsController {
   constructor(private readonly purchaseRequestsService: PurchaseRequestsService) {}
 
+  @Permissions(Permission.CREATE_SC)
   @Post()
   create(@Body() createDto: CreatePurchaseRequestDto, @CurrentUser() user: any) {
     return this.purchaseRequestsService.create(createDto, user);
   }
 
+  @Permissions(Permission.VIEW_SC)
   @Get()
   findAll(
     @CurrentUser() user: any,
@@ -23,21 +27,25 @@ export class PurchaseRequestsController {
     return this.purchaseRequestsService.findAll(user.tenantId, { estatus, locationId, desde, hasta });
   }
 
+  @Permissions(Permission.VIEW_SC)
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: any) {
     return this.purchaseRequestsService.findOne(id, user.tenantId);
   }
 
+  @Permissions(Permission.APPROVE_SC)
   @Post(':id/approve')
   approve(@Param('id') id: string, @Body('comentario') comentario: string, @CurrentUser() user: any) {
     return this.purchaseRequestsService.approve(id, comentario, user);
   }
 
+  @Permissions(Permission.APPROVE_SC)
   @Post(':id/reject')
   reject(@Param('id') id: string, @Body('comentario') comentario: string, @CurrentUser() user: any) {
     return this.purchaseRequestsService.reject(id, comentario, user);
   }
 
+  @Permissions(Permission.CREATE_OC)
   @Post(':id/complete')
   complete(@Param('id') id: string, @CurrentUser() user: any) {
     return this.purchaseRequestsService.markAsCompleted(id, user);

@@ -33,13 +33,13 @@ const LogoUpload = ({ tenantId, currentLogo, onUpload }: LogoUploadProps) => {
     setUploading(true);
     try {
       if (!supabase) {
-        toast.error('Almacenamiento no configurado (VITE_SUPABASE_URL/KEY)');
+        toast.error('Almacenamiento no configurado');
         setPreview(currentLogo || null);
         return;
       }
 
       const ext = file.name.split('.').pop() ?? 'png';
-      const path = `${tenantId}/${Date.now()}.${ext}`;
+      const path = `${tenantId}/logo_${Date.now()}.${ext}`;
 
       const { error } = await supabase.storage
         .from('logos')
@@ -49,7 +49,7 @@ const LogoUpload = ({ tenantId, currentLogo, onUpload }: LogoUploadProps) => {
 
       const { data } = supabase.storage.from('logos').getPublicUrl(path);
       onUpload(data.publicUrl);
-      toast.success('Logo subido correctamente');
+      toast.success('Logo actualizado');
     } catch (err: any) {
       toast.error(err.message || 'Error al subir el logo');
       setPreview(currentLogo || null);

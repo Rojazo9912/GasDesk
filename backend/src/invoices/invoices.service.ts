@@ -72,6 +72,7 @@ export class InvoicesService {
       data: {
         ordenId: dto.ordenId,
         folioFiscalUuid: dto.folioFiscalUuid,
+        xmlUrl: dto.xmlUrl ?? null,
         pdfUrl: dto.pdfUrl ?? null,
         fechaEmision: new Date(dto.fechaEmision),
         subtotal: dto.subtotal,

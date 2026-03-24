@@ -7,6 +7,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { APP_GUARD } from '@nestjs/core';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
+import { PermissionsGuard } from './guards/permissions.guard';
 import { TenantGuard } from './guards/tenant.guard';
 
 @Module({
@@ -30,11 +31,15 @@ import { TenantGuard } from './guards/tenant.guard';
     },
     {
       provide: APP_GUARD,
-      useClass: RolesGuard, // 2. Verificar rol si el endpoint lo requiere
+      useClass: RolesGuard, // 2. Verificar rol (Legacy)
     },
     {
       provide: APP_GUARD,
-      useClass: TenantGuard, // 3. Verificar aislamiento de tenant
+      useClass: PermissionsGuard, // 3. Verificar permisos granulares
+    },
+    {
+      provide: APP_GUARD,
+      useClass: TenantGuard, // 4. Verificar aislamiento de tenant
     },
   ],
   exports: [AuthService],

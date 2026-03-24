@@ -109,6 +109,88 @@ export class ReportsService {
     });
   }
 
+  // Priority 12: Métricas para Dashboard
+  async getSpendingTrend(tenantId: string) {
+    const months = 6;
+    const result: { month: string; total: number }[] = [];
+    const now = new Date();
+
+    for (let i = 0; i < months; i++) {
+      const start = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const end = new Date(now.getFullYear(), now.getMonth() - i + 1, 0);
+
+      const sum = await this.prisma.purchaseOrder.aggregate({
+        _sum: { total: true },
+        where: {
+          tenantId,
+          fechaEmision: { gte: start, lte: end },
+          estatus: { not: EstatusOC.CANCELADA }
+        }
+      });
+
+      result.push({
+        month: start.toLocaleString('default', { month: 'short' }),
+        total: sum._sum.total ?? 0
+      });
+    }
+
+    return result.reverse();
+  }
+
+  async getTopSuppliers(tenantId: string) {
+    const result = await this.prisma.purchaseOrder.groupBy({
+      by: ['supplierId'],
+      where: {
+        tenantId,
+        estatus: { not: EstatusOC.CANCELADA }
+      },
+      _sum: { total: true },
+      orderBy: {
+        _sum: { total: 'desc' }
+      },
+      take: 5
+    });
+
+    // Enriquecer con nombres de proveedores
+    const enriched = await Promise.all(result.map(async (r) => {
+      const supplier = await this.prisma.supplier.findUnique({
+        where: { id: r.supplierId },
+        select: { nombre: true }
+      });
+      return {
+        name: supplier?.nombre || 'Desconocido',
+        value: r._sum.total || 0
+      };
+    }));
+
+    return enriched;
+  }
+
+  async getApprovalTimeAvg(tenantId: string) {
+    // Calculamos el promedio de tiempo entre sc.creadoEn y oc.fechaEmision
+    // Solo para órdenes que ya existen vinculadas a una SC
+    const data = await this.prisma.purchaseOrder.findMany({
+      where: {
+        tenantId,
+        solicitudId: { not: null } as any
+      },
+      select: {
+        fechaEmision: true,
+        solicitud: { select: { creadoEn: true } }
+      }
+    }) as any[];
+
+    if (data.length === 0) return 0;
+
+    const totalMs = data.reduce((acc, curr) => {
+      const diff = curr.fechaEmision.getTime() - curr.solicitud.creadoEn.getTime();
+      return acc + diff;
+    }, 0);
+
+    const avgHrs = (totalMs / data.length) / (1000 * 60 * 60);
+    return Math.round(avgHrs * 10) / 10; // 1 decimal
+  }
+
   // ─── Excel exports ────────────────────────────────────────────────────────────
 
   private styleHeader(row: ExcelJS.Row) {
@@ -150,7 +232,7 @@ export class ReportsService {
 
     ws.getColumn('montoTotal').numFmt = '"$"#,##0.00';
 
-    return wb.xlsx.writeBuffer() as Promise<Buffer>;
+    return wb.xlsx.writeBuffer() as unknown as Promise<Buffer>;
   }
 
   async getScPorEstatusExcel(tenantId: string): Promise<Buffer> {
@@ -171,7 +253,7 @@ export class ReportsService {
       ws.addRow({ estatus: row.estatus, total: row.total });
     }
 
-    return wb.xlsx.writeBuffer() as Promise<Buffer>;
+    return wb.xlsx.writeBuffer() as unknown as Promise<Buffer>;
   }
 
   async getOcRecientesExcel(tenantId: string): Promise<Buffer> {
@@ -205,6 +287,6 @@ export class ReportsService {
 
     ws.getColumn('total').numFmt = '"$"#,##0.00';
 
-    return wb.xlsx.writeBuffer() as Promise<Buffer>;
+    return wb.xlsx.writeBuffer() as unknown as Promise<Buffer>;
   }
 }

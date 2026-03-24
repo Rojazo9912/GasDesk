@@ -4,23 +4,25 @@ import {
 import { BudgetsService } from './budgets.service';
 import { CreateBudgetDto } from './dto/create-budget.dto';
 import { UpdateBudgetDto } from './dto/update-budget.dto';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { RolesGuard } from '../auth/roles.guard';
-import { Roles } from '../auth/roles.decorator';
-import { CurrentUser } from '../auth/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { PermissionsGuard } from '../auth/guards/permissions.guard';
+import { Permissions } from '../auth/decorators/permissions.decorator';
+import { Permission } from '../auth/constants/permissions.constants';
+import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard, PermissionsGuard)
 @Controller('budgets')
 export class BudgetsController {
   constructor(private readonly budgetsService: BudgetsService) {}
 
   @Post()
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Permissions(Permission.MANAGE_BUDGETS)
   create(@CurrentUser() user: any, @Body() dto: CreateBudgetDto) {
     return this.budgetsService.create(user.tenantId, dto);
   }
 
   @Get()
+  @Permissions(Permission.VIEW_BUDGETS)
   findAll(
     @CurrentUser() user: any,
     @Query('anio') anio?: string,
@@ -36,13 +38,13 @@ export class BudgetsController {
   }
 
   @Patch(':id')
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Permissions(Permission.MANAGE_BUDGETS)
   update(@CurrentUser() user: any, @Param('id') id: string, @Body() dto: UpdateBudgetDto) {
     return this.budgetsService.update(id, user.tenantId, dto);
   }
 
   @Delete(':id')
-  @Roles('ADMIN', 'SUPER_ADMIN')
+  @Permissions(Permission.MANAGE_BUDGETS)
   remove(@CurrentUser() user: any, @Param('id') id: string) {
     return this.budgetsService.remove(id, user.tenantId);
   }

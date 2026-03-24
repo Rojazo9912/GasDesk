@@ -13,6 +13,7 @@ export const createInvoice = async (payload: {
   subtotal: number;
   iva: number;
   total: number;
+  xmlUrl?: string;
   pdfUrl?: string;
 }) => {
   const { data } = await api.post('/invoices', payload);

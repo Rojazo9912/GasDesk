@@ -2,8 +2,9 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { getPurchaseRequestById } from '../../services/purchase-requests.service';
-import { getSuppliers } from '../../services/suppliers.service';
+import { getSuppliers, getSupplierPrices } from '../../services/suppliers.service';
 import { createPurchaseOrder } from '../../services/purchase-orders.service';
+import { AlertTriangle, Info } from 'lucide-react';
 
 const NuevaOrden = () => {
   const { scId } = useParams<{ scId: string }>();
@@ -18,6 +19,7 @@ const NuevaOrden = () => {
   const [supplierId, setSupplierId] = useState('');
   const [fechaEntregaEsperada, setFechaEntregaEsperada] = useState('');
   const [items, setItems] = useState<any[]>([]);
+  const [catalogPrices, setCatalogPrices] = useState<Record<string, number>>({});
 
   useEffect(() => {
     const fetchData = async () => {
@@ -51,6 +53,43 @@ const NuevaOrden = () => {
     if (scId) fetchData();
   }, [scId, navigate]);
 
+  // Priority 11: Auto-completar precios cuando cambia el proveedor
+  useEffect(() => {
+    if (!supplierId) {
+      setCatalogPrices({});
+      return;
+    }
+
+    const fetchPrices = async () => {
+      try {
+        const prices = await getSupplierPrices(supplierId);
+        const priceMap: Record<string, number> = {};
+        prices.forEach((p: any) => {
+          if (!priceMap[p.productId]) {
+            priceMap[p.productId] = p.precio;
+          }
+        });
+        setCatalogPrices(priceMap);
+
+        setItems(prev => prev.map(item => {
+          if (item.precioUnitario === 0 && priceMap[item.productId]) {
+            const newPrice = priceMap[item.productId];
+            return {
+              ...item,
+              precioUnitario: newPrice,
+              importe: item.cantidadOrdenada * newPrice
+            };
+          }
+          return item;
+        }));
+      } catch (e) {
+        console.error('Error fetching catalog prices', e);
+      }
+    };
+
+    fetchPrices();
+  }, [supplierId]);
+
   const handlePriceChange = (index: number, newPrice: number) => {
     const newArr = [...items];
     newArr[index].precioUnitario = newPrice;
@@ -63,6 +102,13 @@ const NuevaOrden = () => {
     newArr[index].cantidadOrdenada = newQty;
     newArr[index].importe = newQty * newArr[index].precioUnitario;
     setItems(newArr);
+  };
+
+  const getPriceDiff = (productId: string, currentPrice: number) => {
+    const catPrice = catalogPrices[productId];
+    if (!catPrice || catPrice === 0) return null;
+    const diff = ((currentPrice - catPrice) / catPrice) * 100;
+    return diff;
   };
 
   const subtotal = items.reduce((acc, curr) => acc + curr.importe, 0);
@@ -149,33 +195,66 @@ const NuevaOrden = () => {
                  </tr>
                </thead>
                <tbody>
-                 {items.map((item, index) => (
-                   <tr key={index} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
-                     <td className="py-3 px-4 font-medium">{item.productName} <span className="text-slate-400 font-normal ml-1">({item.productUnit})</span></td>
-                     <td className="py-3 px-4">
-                       <input 
-                         type="number" 
-                         min="1" required step="any"
-                         value={item.cantidadOrdenada}
-                         onChange={(e) => handleQtyChange(index, parseFloat(e.target.value))}
-                         className="w-full p-1.5 border border-slate-300 rounded focus:border-emerald-500 text-center"
-                       />
-                     </td>
-                     <td className="py-3 px-4 flex items-center gap-1">
-                       <span className="text-slate-500">$</span>
-                       <input 
-                         type="number" 
-                         min="0" required step="any"
-                         value={item.precioUnitario}
-                         onChange={(e) => handlePriceChange(index, parseFloat(e.target.value))}
-                         className="w-full p-1.5 border border-slate-300 rounded focus:border-emerald-500 text-right"
-                       />
-                     </td>
-                     <td className="py-3 px-4 text-right font-mono font-medium text-slate-800">
-                       ${item.importe.toFixed(2)}
-                     </td>
-                   </tr>
-                 ))}
+                 {items.map((item, index) => {
+                   const diff = getPriceDiff(item.productId, item.precioUnitario);
+                   const hasVariation = diff !== null && Math.abs(diff) > 5;
+
+                   return (
+                    <tr key={index} className="border-b border-slate-100 last:border-0 hover:bg-slate-50">
+                      <td className="py-3 px-4">
+                        <div>
+                          <p className="font-medium text-slate-800">{item.productName}</p>
+                          <p className="text-xs text-slate-400">{item.productUnit}</p>
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-center">
+                        <input 
+                          type="number" 
+                          min="1" required step="any"
+                          value={item.cantidadOrdenada}
+                          onChange={(e) => handleQtyChange(index, parseFloat(e.target.value))}
+                          className="w-24 p-1.5 border border-slate-300 rounded focus:border-emerald-500 text-center text-slate-700"
+                        />
+                      </td>
+                      <td className="py-3 px-4">
+                        <div className="flex flex-col gap-1">
+                          <div className="flex items-center gap-1">
+                            <span className="text-slate-500">$</span>
+                            <input 
+                              type="number" 
+                              min="0" required step="any"
+                              value={item.precioUnitario}
+                              onChange={(e) => handlePriceChange(index, parseFloat(e.target.value))}
+                              className={`w-full p-1.5 border rounded focus:border-emerald-500 text-right font-medium ${
+                                hasVariation ? 'border-amber-400 bg-amber-50 text-amber-800' : 'border-slate-300 text-slate-700'
+                              }`}
+                            />
+                          </div>
+                          {diff !== null && (
+                            <div className={`flex items-center gap-1 text-[10px] font-bold px-1 py-0.5 rounded-sm w-fit ${
+                              diff === 0 ? 'bg-slate-100 text-slate-400' : 
+                              diff > 0 ? 'bg-amber-100 text-amber-600' : 'bg-emerald-100 text-emerald-600'
+                            }`}>
+                              {diff === 0 ? (
+                                <span className="flex items-center gap-1">
+                                  <Info className="w-2.5 h-2.5" /> Precio cat.
+                                </span>
+                              ) : (
+                                <>
+                                  <AlertTriangle className="w-2.5 h-2.5" />
+                                  {diff > 0 ? '+' : ''}{diff.toFixed(1)}% vs cat.
+                                </>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                      <td className="py-3 px-4 text-right font-mono font-medium text-slate-800">
+                        ${item.importe.toFixed(2)}
+                      </td>
+                    </tr>
+                   );
+                 })}
                </tbody>
              </table>
            </div>

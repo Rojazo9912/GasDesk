@@ -19,10 +19,17 @@ import { PerfilesModule } from './perfiles/perfiles.module';
 import { QuotationsModule } from './quotations/quotations.module';
 import { BudgetsModule } from './budgets/budgets.module';
 import { NotificationsModule } from './notifications/notifications.module';
+import { AuditLogModule } from './audit-log/audit-log.module';
+import { StorageModule } from './common/storage/storage.module';
 import { BullModule } from '@nestjs/bull';
+import { ThrottlerModule } from '@nestjs/throttler';
 
 @Module({
   imports: [
+    ThrottlerModule.forRoot([{
+      ttl: 900000,
+      limit: 10,
+    }]),
     PrismaModule,
     AuthModule,
     TenantsModule,
@@ -43,6 +50,8 @@ import { BullModule } from '@nestjs/bull';
     QuotationsModule,
     BudgetsModule,
     NotificationsModule,
+    AuditLogModule,
+    StorageModule,
     ...(process.env.REDIS_URL ? [BullModule.forRoot({ redis: process.env.REDIS_URL })] : [])
   ],
   controllers: [],

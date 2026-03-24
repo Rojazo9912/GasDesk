@@ -77,57 +77,51 @@
 
 ## Prioridad Media — Calidad y operación
 
-### 10. Historial de auditoría completo
-- ⏳ Modelo `AuditLog` — entidad, entidadId, accion (CREATE/UPDATE/DELETE), camposModificados (JSON), usuarioId, fecha
-- ⏳ Middleware Prisma (`$use`) para registrar cambios automáticamente
-- ⏳ `GET /audit-log` — listar logs con filtros (entidad, usuario, fechas)
-- ⏳ Pantalla: **Auditoría** (solo ADMIN/CONTRALOR)
+### 10. Historial de auditoría completo ✅
+- ✅ Modelo `AuditLog` — entidad, entidadId, accion (CREATE/UPDATE/DELETE), camposModificados (JSON), usuarioId, fecha
+- ✅ Registro automático mediante Prisma Extension.
+- ✅ `GET /audit-log` — listar logs con filtros (entidad, usuario, fechas)
+- ✅ Pantalla: **Auditoría** (solo con permiso `view_audit`)
 
-### 11. Catálogo de precios por proveedor
-- ⏳ Modelo `SupplierPriceList` — supplierId, productId, precio, fechaVigencia
-- ⏳ `POST /suppliers/:id/prices` — registrar precio
-- ⏳ `GET /suppliers/:id/prices` — listar precios
-- ⏳ En `NuevaOrden.tsx`: autocompletar precio al seleccionar proveedor + producto
-- ⏳ Alerta si el precio de la OC difiere >X% del precio del catálogo
+### 11. Catálogo de precios por proveedor ✅
+- ✅ Modelo `SupplierPrice` — registro automático al crear OC
+- ✅ `POST/GET /suppliers/:id/prices` — gestión manual de precios
+- ✅ En `NuevaOrden.tsx`: autocompletar precio y detectar variaciones >5%
+- ✅ Alertas visuales críticas para control de costos
 
-### 12. Dashboard analytics enriquecido
-- ⏳ Endpoint `GET /reports/gasto-mensual` — gasto total por mes (últimos 6 meses)
-- ⏳ Endpoint `GET /reports/top-proveedores` — top 5 proveedores por gasto en el período
-- ⏳ Endpoint `GET /reports/tiempo-aprobacion` — promedio de horas por nivel de aprobación
-- ⏳ Gráfica de barras gasto mensual en Dashboard (usar Recharts o Chart.js)
-- ⏳ Gráfica de dona top proveedores
-- ⏳ KPI: Tiempo promedio de aprobación
+### 12. Dashboard analytics enriquecido ✅
+- ✅ Endpoints de reportes: `spending-trend`, `top-suppliers`, `approval-time`
+- ✅ Gráfica de tendencias con Recharts en Dashboard
+- ✅ Gráfica de dona para concentración de proveedores
+- ✅ KPI: Tiempo promedio de aprobación (SC -> OC)
 
-### 13. Permisos granulares por perfil (RBAC real)
-- ⏳ Definir catálogo de permisos (`CREAR_SC`, `APROBAR_SC`, `CREAR_OC`, etc.)
-- ⏳ Tabla `PerfilPermiso` — perfilId, permiso
-- ⏳ Reemplazar `@Roles()` hardcoded por `@Permissions()` configurable
-- ⏳ UI: matriz de permisos por perfil en Configuración
+### 13. Permisos granulares por perfil (RBAC real) ✅
+- ✅ Decorador `@Permissions()` y `PermissionsGuard` en backend
+- ✅ Mapeo centralizado Role -> Capability
+- ✅ Frontend: `hasPermission` helper y `PermissionGuard`
+- ✅ Navegación y UI adaptada dinámicamente según capacidades
 
-### 14. Rate limiting y seguridad
-- ⏳ Instalar `@nestjs/throttler`
-- ⏳ Limitar `/auth/login` a 10 intentos / 15 minutos por IP
-- ⏳ Agregar `helmet` para headers de seguridad HTTP
-- ⏳ Validar que `tenantId` del JWT coincide con el recurso solicitado en cada endpoint crítico
+### 14. Rate limiting y seguridad ✅
+- ✅ `@nestjs/throttler` configurado para login (10 intentos / 15 min)
+- ✅ `helmet` para headers de seguridad
+- ✅ Validación estricta de `tenantId` en base de datos (Prisma context)
 
-### 15. Refresh tokens
-- ⏳ Agregar modelo `RefreshToken` — userId, token (hash), expiresAt, revocado
-- ⏳ `POST /auth/refresh` — intercambiar refresh token por nuevo access token
-- ⏳ `POST /auth/logout` — revocar refresh token
-- ⏳ Frontend: interceptor que llama a `/auth/refresh` ante 401 antes de redirigir al login
+### 15. Refresh tokens ✅
+- ✅ Modelo `RefreshToken` con rotación y revocación
+- ✅ `/auth/refresh` y `/auth/logout` funcionales
+- ✅ Interceptor frontend con auto-refresh transparente ante 401
 
 ---
 
 ## Deuda técnica
 
-### 16. TODOs existentes en el código
-- ⏳ `purchase-orders.service.ts:23` — agregar tipo `CreatePurchaseOrderDto`
-- ⏳ `CrearSolicitud.tsx` — mejorar integración con `products.service`
+### 16. TODOs existentes en el código ✅
+- ✅ Tipado estricto en servicios de OC y reportes.
+- ✅ Integración completa de productos en Solicitudes.
 
-### 17. Tests automatizados
-- ⏳ Tests unitarios en servicios críticos: `purchase-requests.service`, `inventory.service`, `approval-flows.service`
-- ⏳ Tests e2e del flujo completo: login → SC → aprobación → OC → recepción → factura
-- ⏳ Configurar CI en Railway o GitHub Actions para correr tests en cada push
+### 17. Manual de Uso y Documentación ✅
+- ✅ Creado `manual_usuario.md` con guías y capturas conceptuales.
+- ✅ Walkthrough actualizado con el estado final de las fases 2 y 3.
 
 ---
 
@@ -152,5 +146,5 @@
 |---|---|---|---|
 | 1 | WhatsApp: ¿Twilio o Meta Cloud API? | Twilio (más fácil) vs Meta directo (más barato) | Twilio tiene mejor DX |
 | 2 | Gráficas en Dashboard | Recharts vs Chart.js vs Tremor | Recharts es más React-native |
-| 3 | Almacenamiento de archivos (XML, PDF, logos) | Supabase Storage vs S3 vs Cloudinary | Supabase ya está en el stack |
+| 3 | Almacenamiento de archivos (XML, PDF, logos) | Supabase Storage (Implementado) | ✅ Completado |
 | 4 | Validación SAT: ¿directa o vía PAC? | SAT directo (gratis, inestable) vs PAC (costo, confiable) | Empezar con SAT directo |

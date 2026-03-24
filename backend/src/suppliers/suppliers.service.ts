@@ -2,6 +2,7 @@ import { Injectable, NotFoundException, ConflictException } from '@nestjs/common
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSupplierDto } from './dto/create-supplier.dto';
 import { UpdateSupplierDto } from './dto/update-supplier.dto';
+import { CreateSupplierPriceDto } from './dto/create-supplier-price.dto';
 
 @Injectable()
 export class SuppliersService {
@@ -46,6 +47,32 @@ export class SuppliersService {
     return this.prisma.supplier.update({
       where: { id },
       data: { activo: false }
+    });
+  }
+
+  // Métodos de Precios
+  async addPrice(supplierId: string, dto: CreateSupplierPriceDto, tenantId: string) {
+    return (this.prisma as any).supplierPrice.create({
+      data: {
+        ...dto,
+        supplierId,
+        tenantId
+      }
+    });
+  }
+
+  async getPrices(supplierId: string, tenantId: string) {
+    return (this.prisma as any).supplierPrice.findMany({
+      where: { supplierId, tenantId },
+      include: { product: true },
+      orderBy: { fecha: 'desc' }
+    });
+  }
+
+  async getLatestPrice(supplierId: string, productId: string, tenantId: string) {
+    return (this.prisma as any).supplierPrice.findFirst({
+      where: { supplierId, productId, tenantId },
+      orderBy: { fecha: 'desc' }
     });
   }
 }

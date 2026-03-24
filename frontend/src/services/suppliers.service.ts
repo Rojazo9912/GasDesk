@@ -19,3 +19,8 @@ export const deleteSupplier = async (id: string) => {
   const { data } = await api.delete(`/suppliers/${id}`);
   return data;
 };
+
+export const getSupplierPrices = async (supplierId: string) => {
+  const { data } = await api.get(`/suppliers/${supplierId}/prices`);
+  return data;
+};

@@ -38,6 +38,19 @@ export class PurchaseOrdersService {
         include: { items: true, supplier: true }
       });
 
+      // 2. Registrar Precios en el Historial del Proveedor (Priority 11)
+      // @ts-ignore - Prisma proxy types
+      await prisma.supplierPrice.createMany({
+        data: createDto.items.map(i => ({
+          tenantId: user.tenantId,
+          supplierId: createDto.supplierId,
+          productId: i.productId,
+          precio: i.precioUnitario,
+          moneda: 'MXN',
+          notas: `Auto-registrado desde OC folio: ${oc.folio}`
+        }))
+      });
+
       return oc;
     });
 

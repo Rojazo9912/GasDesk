@@ -19,7 +19,7 @@ export class QuotationsService {
     });
     if (!solicitud) throw new NotFoundException('Solicitud de compra no encontrada.');
 
-    if (![EstatusSC.PENDIENTE_COMPRAS, EstatusSC.EN_PROCESO].includes(solicitud.estatus)) {
+    if (!([EstatusSC.PENDIENTE_COMPRAS, EstatusSC.EN_PROCESO] as EstatusSC[]).includes(solicitud.estatus)) {
       throw new BadRequestException('Solo se pueden cotizar solicitudes en estado PENDIENTE_COMPRAS o EN_PROCESO.');
     }
 

@@ -1,9 +1,16 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
+import { UserContextInterceptor } from './common/context/user-context.interceptor';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  app.use(helmet());
+
+  // Interceptor de contexto global
+  app.useGlobalInterceptors(new UserContextInterceptor());
 
   // Validación global con class-validator
   app.useGlobalPipes(
