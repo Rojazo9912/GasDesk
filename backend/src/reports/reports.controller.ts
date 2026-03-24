@@ -3,7 +3,7 @@ import { ReportsService } from './reports.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import { Permissions } from '../auth/decorators/permissions.decorator';
 import { Permission } from '../auth/constants/permissions.constants';
-import type { Response } from 'express';
+import { Response } from 'express';
 
 @Controller('reports')
 export class ReportsController {
@@ -57,7 +57,7 @@ export class ReportsController {
   @Get('gastos-proveedor/xlsx')
   async getGastosProveedorExcel(
     @CurrentUser() user: any,
-    @Res() res: Response,
+    @Res() res: any,
     @Query('desde') desde?: string,
     @Query('hasta') hasta?: string,
   ) {
@@ -70,7 +70,7 @@ export class ReportsController {
   }
 
   @Get('sc-por-estatus/xlsx')
-  async getScPorEstatusExcel(@CurrentUser() user: any, @Res() res: Response) {
+  async getScPorEstatusExcel(@CurrentUser() user: any, @Res() res: any) {
     const buffer = await this.reportsService.getScPorEstatusExcel(user.tenantId);
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
@@ -80,7 +80,7 @@ export class ReportsController {
   }
 
   @Get('oc-recientes/xlsx')
-  async getOcRecientesExcel(@CurrentUser() user: any, @Res() res: Response) {
+  async getOcRecientesExcel(@CurrentUser() user: any, @Res() res: any) {
     const buffer = await this.reportsService.getOcRecientesExcel(user.tenantId);
     res.set({
       'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
