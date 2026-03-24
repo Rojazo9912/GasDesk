@@ -41,7 +41,7 @@ const ListaOrdenes = () => {
   };
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
@@ -73,28 +73,32 @@ const ListaOrdenes = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center">
-                    <div className="flex flex-col items-center gap-2 text-slate-400">
-                      <span className="text-3xl animate-bounce">⏳</span>
-                      <span className="text-sm">Cargando órdenes...</span>
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-slate-100">
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-20 mb-1" /><div className="skeleton h-3 w-16" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-28" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-20" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-24" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-20" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-6 w-24 rounded-full" /></td>
+                    <td className="px-5 py-3.5 text-right"><div className="skeleton h-7 w-20 ml-auto rounded-lg" /></td>
+                  </tr>
+                ))
               ) : ordenes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-5 py-10 text-center">
+                  <td colSpan={7} className="px-5 py-12 text-center">
                     <div className="flex flex-col items-center gap-2 text-slate-400">
-                      <span className="text-3xl">📭</span>
-                      <span className="text-sm">No hay Órdenes de Compra registradas.</span>
+                      <span className="text-4xl">📭</span>
+                      <span className="text-sm font-medium">No hay Órdenes de Compra registradas.</span>
                     </div>
                   </td>
                 </tr>
               ) : (
-                ordenes.map((oc) => {
+                ordenes.map((oc, idx) => {
                   const badge = getEstatusBadge(oc.estatus);
+                  const stagger = `stagger-${Math.min(idx + 1, 8)}`;
                   return (
-                    <tr key={oc.id} className="hover:bg-slate-50/80 transition-colors duration-150">
+                    <tr key={oc.id} className={`animate-row-in ${stagger} hover:bg-slate-50/80 transition-colors duration-150`}>
                       <td className="px-5 py-3.5">
                         <div className="font-bold text-slate-800 font-mono text-xs">
                           OC-{oc.folio?.toString().padStart(4, '0') || 'N/A'}

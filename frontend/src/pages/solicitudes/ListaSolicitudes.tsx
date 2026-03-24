@@ -96,7 +96,7 @@ const ListaSolicitudes = () => {
     });
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-5 animate-fade-in">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div>
@@ -194,28 +194,31 @@ const ListaSolicitudes = () => {
             </thead>
             <tbody className="divide-y divide-slate-100">
               {loading ? (
-                <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center">
-                    <div className="flex flex-col items-center gap-2 text-slate-400">
-                      <span className="text-3xl animate-bounce">⏳</span>
-                      <span className="text-sm">Cargando solicitudes...</span>
-                    </div>
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} className="border-b border-slate-100">
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-20 mb-1" /><div className="skeleton h-3 w-16" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-28" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-24" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-4 w-12" /></td>
+                    <td className="px-5 py-3.5"><div className="skeleton h-6 w-24 rounded-full" /></td>
+                    <td className="px-5 py-3.5 text-right"><div className="skeleton h-7 w-24 ml-auto rounded-lg" /></td>
+                  </tr>
+                ))
               ) : solicitudesFiltradas.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-5 py-10 text-center">
+                  <td colSpan={6} className="px-5 py-12 text-center">
                     <div className="flex flex-col items-center gap-2 text-slate-400">
-                      <span className="text-3xl">📭</span>
-                      <span className="text-sm">{hayFiltros ? 'Sin resultados para los filtros aplicados.' : 'No hay solicitudes creadas aún.'}</span>
+                      <span className="text-4xl">📭</span>
+                      <span className="text-sm font-medium">{hayFiltros ? 'Sin resultados para los filtros aplicados.' : 'No hay solicitudes creadas aún.'}</span>
                     </div>
                   </td>
                 </tr>
               ) : (
-                solicitudesFiltradas.map((req) => {
+                solicitudesFiltradas.map((req, idx) => {
                   const badge = getEstatusBadge(req.estatus);
+                  const stagger = `stagger-${Math.min(idx + 1, 8)}`;
                   return (
-                    <tr key={req.id} className="hover:bg-slate-50/80 transition-colors duration-150">
+                    <tr key={req.id} className={`animate-row-in ${stagger} hover:bg-slate-50/80 transition-colors duration-150`}>
                       <td className="px-5 py-3.5">
                         <div className="font-bold text-slate-800 font-mono text-xs">{formatarFolio(req.id)}</div>
                         <div className="text-xs text-slate-400 mt-0.5">{formatearFecha(req.creadoEn)}</div>
