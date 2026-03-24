@@ -1,11 +1,26 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Outlet, Navigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useNotifications } from '../../hooks/useNotifications';
 
 const Layout = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, token, logout } = useAuth();
   const location = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const { notifications, unreadCount, markRead, markAllRead } = useNotifications(token);
+
+  // Cerrar panel de notificaciones al hacer click fuera
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(e.target as Node)) {
+        setNotifOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   if (!isAuthenticated) {
     return <Navigate to="/login" replace state={{ from: location }} />;
@@ -19,6 +34,7 @@ const Layout = () => {
     { label: 'Dashboard',             emoji: '🏠', path: '/',                roles: ALL_ROLES },
     { label: 'Solicitudes',           emoji: '📋', path: '/solicitudes',     roles: ALL_ROLES },
     { label: 'Órdenes de Compra',     emoji: '📦', path: '/ordenes',         roles: STAFF_ROLES },
+    { label: 'Cotizaciones',          emoji: '💬', path: '/cotizaciones',    roles: STAFF_ROLES },
     { label: 'Inventario',            emoji: '🗃️', path: '/inventario',      roles: STAFF_ROLES },
     { label: 'Reportes',              emoji: '📊', path: '/reportes',        roles: ['SUPER_ADMIN', 'ADMIN', 'GERENTE', 'COMPRAS', 'CONTRALOR'] },
     { label: 'Empresas',              emoji: '🏢', path: '/admin/empresas',  roles: ['SUPER_ADMIN'] },
@@ -33,6 +49,13 @@ const Layout = () => {
       i.path === '/' ? path === '/' : path.startsWith(i.path)
     );
     return match ? `${match.emoji} ${match.label}` : 'GasDesk';
+  };
+
+  const TIPO_COLORS: Record<string, string> = {
+    info: 'bg-blue-50 border-blue-100',
+    error: 'bg-red-50 border-red-100',
+    warning: 'bg-yellow-50 border-yellow-100',
+    success: 'bg-emerald-50 border-emerald-100',
   };
 
   return (
@@ -143,6 +166,65 @@ const Layout = () => {
             </h2>
           </div>
           <div className="flex items-center gap-3">
+            {/* Campana de notificaciones */}
+            <div className="relative" ref={notifRef}>
+              <button
+                onClick={() => setNotifOpen(v => !v)}
+                className="relative p-2 rounded-lg text-slate-500 hover:bg-slate-100 transition-colors"
+                title="Notificaciones"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2}
+                    d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6 6 0 00-5-5.917V4a1 1 0 10-2 0v1.083A6 6 0 006 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-4 h-4 text-[10px] font-bold bg-red-500 text-white rounded-full flex items-center justify-center">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                )}
+              </button>
+
+              {/* Panel de notificaciones */}
+              {notifOpen && (
+                <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl shadow-xl border border-slate-200 z-50 overflow-hidden">
+                  <div className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+                    <span className="font-semibold text-slate-700 text-sm">Notificaciones</span>
+                    {unreadCount > 0 && (
+                      <button
+                        onClick={() => markAllRead()}
+                        className="text-xs text-indigo-600 hover:underline"
+                      >
+                        Marcar todo leído
+                      </button>
+                    )}
+                  </div>
+                  <div className="max-h-80 overflow-y-auto divide-y divide-slate-50">
+                    {notifications.length === 0 ? (
+                      <div className="px-4 py-8 text-center text-slate-400 text-sm">Sin notificaciones</div>
+                    ) : (
+                      notifications.map(n => (
+                        <div
+                          key={n.id}
+                          onClick={() => !n.leida && markRead(n.id)}
+                          className={`px-4 py-3 cursor-pointer hover:bg-slate-50 border-l-2 ${
+                            n.leida ? 'border-transparent' : 'border-indigo-400'
+                          } ${TIPO_COLORS[n.tipo] ?? ''}`}
+                        >
+                          <div className={`text-sm font-medium ${n.leida ? 'text-slate-500' : 'text-slate-800'}`}>
+                            {n.titulo}
+                          </div>
+                          <div className="text-xs text-slate-500 mt-0.5 line-clamp-2">{n.mensaje}</div>
+                          <div className="text-[10px] text-slate-400 mt-1">
+                            {new Date(n.creadaEn).toLocaleString('es-MX', { dateStyle: 'short', timeStyle: 'short' })}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
             <div className="hidden sm:block text-right">
               <div className="text-sm font-medium text-slate-700">{user?.nombre}</div>
               <div className="text-xs text-slate-400">{user?.rol}</div>

@@ -65,7 +65,7 @@ export class EscalationProcessor {
         await this.notify(
           flow.alterno.email,
           'Solicitud Escalada — Requiere tu Aprobación',
-          `<p>La solicitud <strong>${solicitudId.slice(0, 8).toUpperCase()}</strong> fue escalada a ti porque el aprobador principal superó el tiempo límite.</p>
+          `<p>La solicitud <strong>SC-${solicitud.folio}</strong> fue escalada a ti porque el aprobador principal superó el tiempo límite.</p>
            <p>Por favor ingresa a GasDesk para revisarla.</p>`,
         );
       }
@@ -76,7 +76,7 @@ export class EscalationProcessor {
         await this.notify(
           flow.aprobador.email,
           'Recordatorio: Solicitud Pendiente de Aprobación',
-          `<p>La solicitud <strong>${solicitudId.slice(0, 8).toUpperCase()}</strong> lleva más tiempo del permitido esperando tu aprobación.</p>
+          `<p>La solicitud <strong>SC-${solicitud.folio}</strong> lleva más tiempo del permitido esperando tu aprobación.</p>
            <p>Por favor ingresa a GasDesk para resolverla.</p>`,
         );
       }
@@ -91,7 +91,7 @@ export class EscalationProcessor {
           await this.notify(
             admin.email,
             'Alerta: Solicitud Bloqueada por Timeout',
-            `<p>La solicitud <strong>${solicitudId.slice(0, 8).toUpperCase()}</strong> lleva más del tiempo permitido sin aprobarse en el Nivel ${nivelActual}.</p>
+            `<p>La solicitud <strong>SC-${solicitud.folio}</strong> lleva más del tiempo permitido sin aprobarse en el Nivel ${nivelActual}.</p>
              <p>El aprobador asignado es <strong>${flow.aprobador.nombre}</strong>. No existe aprobador alterno.</p>`,
           );
         }

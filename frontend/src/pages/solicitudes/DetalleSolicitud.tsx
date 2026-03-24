@@ -115,7 +115,7 @@ const DetalleSolicitud = () => {
             {user?.tenant?.logo && (
               <img src={user.tenant.logo} alt="logo" className="h-8 object-contain max-w-[60px]" />
             )}
-            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">SC-{solicitud.id?.slice(0, 8).toUpperCase()}</h1>
+            <h1 className="text-xl sm:text-2xl font-bold text-slate-800">SC-{solicitud.folio ?? solicitud.id?.slice(0, 8).toUpperCase()}</h1>
             <span className="px-2.5 py-1 bg-slate-100 text-slate-700 text-xs font-semibold rounded-full border border-slate-200">
               {solicitud.estatus}
             </span>

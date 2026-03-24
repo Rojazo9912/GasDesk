@@ -33,7 +33,7 @@ const getEstatusBadge = (estatus: string): EstatusBadge => {
   }
 };
 
-const formatarFolio = (id: string) => `SC-${id.slice(0, 8).toUpperCase()}`;
+const formatarFolio = (solicitud: any) => `SC-${solicitud.folio ?? solicitud.id.slice(0, 8).toUpperCase()}`;
 
 const ListaSolicitudes = () => {
   const [solicitudes, setSolicitudes] = useState<any[]>([]);
@@ -220,7 +220,7 @@ const ListaSolicitudes = () => {
                   return (
                     <tr key={req.id} className={`animate-row-in ${stagger} hover:bg-slate-50/80 transition-colors duration-150`}>
                       <td className="px-5 py-3.5">
-                        <div className="font-bold text-slate-800 font-mono text-xs">{formatarFolio(req.id)}</div>
+                        <div className="font-bold text-slate-800 font-mono text-xs">{formatarFolio(req)}</div>
                         <div className="text-xs text-slate-400 mt-0.5">{formatearFecha(req.creadoEn)}</div>
                       </td>
                       <td className="px-5 py-3.5 font-medium text-slate-700">

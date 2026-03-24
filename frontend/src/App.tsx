@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 import Layout from './components/shared/Layout';
 import RoleGuard from './components/shared/RoleGuard';
 import Login from './pages/Login';
+import ForgotPassword from './pages/auth/ForgotPassword';
+import ResetPassword from './pages/auth/ResetPassword';
 import Dashboard from './pages/Dashboard';
 import ConfiguracionLayout from './pages/configuracion/ConfiguracionLayout';
 import EmpresaSettings from './pages/configuracion/EmpresaSettings';
@@ -21,6 +23,12 @@ import DetalleSolicitud from './pages/solicitudes/DetalleSolicitud';
 import ListaOrdenes from './pages/ordenes/ListaOrdenes';
 import NuevaOrden from './pages/ordenes/NuevaOrden';
 import DetalleOrden from './pages/ordenes/DetalleOrden';
+
+import ListaCotizaciones from './pages/cotizaciones/ListaCotizaciones';
+import NuevaCotizacion from './pages/cotizaciones/NuevaCotizacion';
+import ComparativaCotizaciones from './pages/cotizaciones/ComparativaCotizaciones';
+
+import Presupuestos from './pages/configuracion/Presupuestos';
 
 import InventarioLayout from './pages/inventario/InventarioLayout';
 import StockActual from './pages/inventario/StockActual';
@@ -40,6 +48,8 @@ function App() {
       <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/forgot-password" element={<ForgotPassword />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
 
         <Route element={<Layout />}>
           <Route path="/" element={<Dashboard />} />
@@ -58,6 +68,17 @@ function App() {
           } />
           <Route path="ordenes/:id" element={
             <RoleGuard roles={STAFF_ROLES}><DetalleOrden /></RoleGuard>
+          } />
+
+          {/* Cotizaciones — staff */}
+          <Route path="cotizaciones" element={
+            <RoleGuard roles={STAFF_ROLES}><ListaCotizaciones /></RoleGuard>
+          } />
+          <Route path="cotizaciones/nueva/:scId" element={
+            <RoleGuard roles={STAFF_ROLES}><NuevaCotizacion /></RoleGuard>
+          } />
+          <Route path="cotizaciones/comparar/:scId" element={
+            <RoleGuard roles={STAFF_ROLES}><ComparativaCotizaciones /></RoleGuard>
           } />
 
           {/* Reportes — gerencia y arriba */}
@@ -93,6 +114,7 @@ function App() {
             <Route path="proveedores" element={<ProveedoresList />} />
             <Route path="departamentos" element={<DepartamentosList />} />
             <Route path="perfiles" element={<PerfilesList />} />
+            <Route path="presupuestos" element={<Presupuestos />} />
           </Route>
         </Route>
       </Routes>

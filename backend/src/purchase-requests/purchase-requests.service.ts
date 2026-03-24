@@ -5,6 +5,8 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePurchaseRequestDto } from './dto/create-purchase-request.dto';
 import { EstatusSC } from '@prisma/client';
 import { Resend } from 'resend';
+import { NotificationsService } from '../notifications/notifications.service';
+import { BudgetsService } from '../budgets/budgets.service';
 
 @Injectable()
 export class PurchaseRequestsService {
@@ -12,6 +14,8 @@ export class PurchaseRequestsService {
 
   constructor(
     private readonly prisma: PrismaService,
+    private readonly notificationsService: NotificationsService,
+    private readonly budgetsService: BudgetsService,
     @Optional() @InjectQueue('escalations') private escalationsQueue?: Queue,
   ) {
     this.resend = new Resend(process.env.RESEND_API_KEY || 're_123');
@@ -80,17 +84,31 @@ export class PurchaseRequestsService {
       include: { items: true, historial: true }
     });
 
+    const reqAny = req as any;
+
+    // Notificación in-app al aprobador
+    this.notificationsService.create(
+      baseFlow.aprobadorId,
+      user.tenantId,
+      'Nueva Solicitud Pendiente',
+      `Tienes una nueva Solicitud de Compra (SC-${reqAny.folio}) pendiente de autorización.`,
+      'info',
+    ).catch(() => {});
+
     if (baseFlow.aprobador.email) {
       this.notifyUser(
         baseFlow.aprobador.email,
         'Nueva Solicitud Pendiente',
-        `Tienes una nueva Solicitud de Compra (SC-${req.id.slice(0, 8).toUpperCase()}) pendiente de autorización.`
+        `Tienes una nueva Solicitud de Compra (SC-${reqAny.folio}) pendiente de autorización.`
       );
     }
 
     await this.scheduleEscalation(req.id, 1, baseFlow.tiempoLimiteHrs);
 
-    return req;
+    // Verificar presupuesto (no bloqueante)
+    const budgetCheck = await this.budgetsService.checkBudget(user.tenantId, locationId, 0);
+
+    return { ...req, alertaPresupuesto: budgetCheck.alertaPresupuesto };
   }
 
   async findAll(tenantId: string, filters?: { estatus?: string; locationId?: string; desde?: string; hasta?: string }) {
@@ -192,11 +210,19 @@ export class PurchaseRequestsService {
       });
     });
 
-    if (nextFlow && nextFlow.aprobador.email) {
-      this.notifyUser(nextFlow.aprobador.email, 'Solicitud Avanzada', 'Una solicitud requiere tu aprobación ahora.');
-    }
-
     if (nextFlow) {
+      // Notificación in-app al siguiente aprobador
+      this.notificationsService.create(
+        nextFlow.aprobadorId,
+        user.tenantId,
+        'Solicitud Avanzada',
+        `La SC-${(solicitud as any).folio} requiere tu aprobación.`,
+        'info',
+      ).catch(() => {});
+
+      if (nextFlow.aprobador.email) {
+        this.notifyUser(nextFlow.aprobador.email, 'Solicitud Avanzada', 'Una solicitud requiere tu aprobación ahora.');
+      }
       await this.scheduleEscalation(id, nuevoNivel, nextFlow.tiempoLimiteHrs);
     }
 
@@ -235,11 +261,20 @@ export class PurchaseRequestsService {
       });
     });
 
+    // Notificación in-app al solicitante
+    this.notificationsService.create(
+      solicitud.solicitanteId,
+      user.tenantId,
+      'Solicitud Rechazada',
+      `Tu solicitud SC-${(solicitud as any).folio} fue rechazada: ${comentario}`,
+      'error',
+    ).catch(() => {});
+
     if (solicitud.solicitante.email) {
       this.notifyUser(
         solicitud.solicitante.email,
         'Solicitud Rechazada',
-        `Tu solicitud SC-${id.slice(0, 8).toUpperCase()} fue rechazada: ${comentario}`
+        `Tu solicitud SC-${(solicitud as any).folio} fue rechazada: ${comentario}`
       );
     }
 

@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { EstatusSC, EstatusOC } from '@prisma/client';
+import * as ExcelJS from 'exceljs';
 
 @Injectable()
 export class ReportsService {
@@ -106,5 +107,104 @@ export class ReportsService {
       orderBy: { fechaEmision: 'desc' },
       take: 50,
     });
+  }
+
+  // ─── Excel exports ────────────────────────────────────────────────────────────
+
+  private styleHeader(row: ExcelJS.Row) {
+    row.eachCell(cell => {
+      cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
+      cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF059669' } };
+      cell.alignment = { vertical: 'middle', horizontal: 'center' };
+      cell.border = {
+        bottom: { style: 'thin', color: { argb: 'FF047857' } },
+      };
+    });
+    row.height = 20;
+  }
+
+  async getGastosProveedorExcel(tenantId: string, desde?: string, hasta?: string): Promise<Buffer> {
+    const data = await this.getGastosPorProveedor(tenantId, desde, hasta);
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'GasDesk';
+    const ws = wb.addWorksheet('Gastos por Proveedor');
+
+    ws.columns = [
+      { header: 'Proveedor', key: 'nombre', width: 35 },
+      { header: 'RFC', key: 'rfc', width: 18 },
+      { header: 'Órdenes', key: 'totalOrdenes', width: 12 },
+      { header: 'Monto Total (MXN)', key: 'montoTotal', width: 22 },
+    ];
+
+    this.styleHeader(ws.getRow(1));
+
+    for (const row of data as any[]) {
+      ws.addRow({
+        nombre: row.supplier.nombre,
+        rfc: row.supplier.rfc,
+        totalOrdenes: row.totalOrdenes,
+        montoTotal: row.montoTotal,
+      });
+    }
+
+    ws.getColumn('montoTotal').numFmt = '"$"#,##0.00';
+
+    return wb.xlsx.writeBuffer() as Promise<Buffer>;
+  }
+
+  async getScPorEstatusExcel(tenantId: string): Promise<Buffer> {
+    const data = await this.getSCPorEstatus(tenantId);
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'GasDesk';
+    const ws = wb.addWorksheet('SC por Estatus');
+
+    ws.columns = [
+      { header: 'Estatus', key: 'estatus', width: 30 },
+      { header: 'Total', key: 'total', width: 12 },
+    ];
+
+    this.styleHeader(ws.getRow(1));
+
+    for (const row of data) {
+      ws.addRow({ estatus: row.estatus, total: row.total });
+    }
+
+    return wb.xlsx.writeBuffer() as Promise<Buffer>;
+  }
+
+  async getOcRecientesExcel(tenantId: string): Promise<Buffer> {
+    const data = await this.getOCRecientes(tenantId);
+
+    const wb = new ExcelJS.Workbook();
+    wb.creator = 'GasDesk';
+    const ws = wb.addWorksheet('OC Recientes');
+
+    ws.columns = [
+      { header: 'Folio', key: 'folio', width: 10 },
+      { header: 'Proveedor', key: 'proveedor', width: 30 },
+      { header: 'Sucursal', key: 'sucursal', width: 25 },
+      { header: 'Estatus', key: 'estatus', width: 18 },
+      { header: 'Total (MXN)', key: 'total', width: 18 },
+      { header: 'Fecha Emisión', key: 'fecha', width: 18 },
+    ];
+
+    this.styleHeader(ws.getRow(1));
+
+    for (const oc of data as any[]) {
+      ws.addRow({
+        folio: oc.folio,
+        proveedor: oc.supplier?.nombre ?? '',
+        sucursal: oc.location?.nombre ?? '',
+        estatus: oc.estatus,
+        total: oc.total,
+        fecha: new Date(oc.fechaEmision).toLocaleDateString('es-MX'),
+      });
+    }
+
+    ws.getColumn('total').numFmt = '"$"#,##0.00';
+
+    return wb.xlsx.writeBuffer() as Promise<Buffer>;
   }
 }

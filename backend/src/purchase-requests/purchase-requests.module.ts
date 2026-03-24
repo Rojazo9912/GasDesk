@@ -4,10 +4,14 @@ import { PurchaseRequestsService } from './purchase-requests.service';
 import { PrismaModule } from '../prisma/prisma.module';
 import { BullModule } from '@nestjs/bull';
 import { EscalationProcessor } from './escalation.processor';
+import { NotificationsModule } from '../notifications/notifications.module';
+import { BudgetsModule } from '../budgets/budgets.module';
 
 @Module({
   imports: [
     PrismaModule,
+    NotificationsModule,
+    BudgetsModule,
     ...(process.env.REDIS_URL ? [BullModule.registerQueue({ name: 'escalations' })] : [])
   ],
   controllers: [PurchaseRequestsController],

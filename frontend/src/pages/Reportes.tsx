@@ -1,5 +1,16 @@
 import { useState, useEffect } from 'react';
 import { getGastosPorProveedor, getSCPorEstatus, getOCRecientes } from '../services/reports.service';
+import api from '../services/api';
+
+async function downloadExcel(endpoint: string, filename: string) {
+  const res = await api.get(endpoint, { responseType: 'blob' });
+  const url = URL.createObjectURL(new Blob([res.data]));
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+}
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -150,7 +161,14 @@ const Reportes = () => {
                 Limpiar filtros
               </button>
             )}
-            <div className="ml-auto">
+            <div className="ml-auto flex gap-2">
+              <button
+                onClick={() => downloadExcel(`/reports/gastos-proveedor/xlsx${desde || hasta ? `?desde=${desde}&hasta=${hasta}` : ''}`, 'gastos-proveedores.xlsx')}
+                disabled={gastos.length === 0}
+                className="px-4 py-2 text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+              >
+                ↓ Excel
+              </button>
               <button
                 onClick={() =>
                   exportCSV(
@@ -172,7 +190,7 @@ const Reportes = () => {
                 disabled={gastos.length === 0}
                 className="px-4 py-2 text-sm font-medium border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-40 transition-colors"
               >
-                ↓ Exportar CSV
+                ↓ CSV
               </button>
             </div>
           </div>
@@ -219,7 +237,14 @@ const Reportes = () => {
       {/* ── SC por Estatus ── */}
       {tab === 'sc' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => downloadExcel('/reports/sc-por-estatus/xlsx', 'sc-por-estatus.xlsx')}
+              disabled={scEstatus.length === 0}
+              className="px-4 py-2 text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+            >
+              ↓ Excel
+            </button>
             <button
               onClick={() =>
                 exportCSV(
@@ -231,7 +256,7 @@ const Reportes = () => {
               disabled={scEstatus.length === 0}
               className="px-4 py-2 text-sm font-medium border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-40 transition-colors"
             >
-              ↓ Exportar CSV
+              ↓ CSV
             </button>
           </div>
 
@@ -277,7 +302,14 @@ const Reportes = () => {
       {/* ── OC Recientes ── */}
       {tab === 'oc' && (
         <div className="space-y-4">
-          <div className="flex justify-end">
+          <div className="flex justify-end gap-2">
+            <button
+              onClick={() => downloadExcel('/reports/oc-recientes/xlsx', 'oc-recientes.xlsx')}
+              disabled={ocList.length === 0}
+              className="px-4 py-2 text-sm font-medium bg-emerald-50 text-emerald-700 border border-emerald-200 rounded hover:bg-emerald-100 disabled:opacity-40 transition-colors"
+            >
+              ↓ Excel
+            </button>
             <button
               onClick={() =>
                 exportCSV(
@@ -303,7 +335,7 @@ const Reportes = () => {
               disabled={ocList.length === 0}
               className="px-4 py-2 text-sm font-medium border border-slate-200 rounded hover:bg-slate-50 disabled:opacity-40 transition-colors"
             >
-              ↓ Exportar CSV
+              ↓ CSV
             </button>
           </div>
 

@@ -11,6 +11,7 @@ const ConfiguracionLayout = () => {
     { name: 'Proveedores',         emoji: '🤝', path: '/configuracion/proveedores' },
     { name: 'Departamentos',       emoji: '🏗️', path: '/configuracion/departamentos' },
     { name: 'Perfiles',            emoji: '🪪', path: '/configuracion/perfiles' },
+    { name: 'Presupuestos',        emoji: '💰', path: '/configuracion/presupuestos' },
   ];
 
   return (

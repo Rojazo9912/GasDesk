@@ -13,7 +13,11 @@
       "Bash(npm audit fix --dry-run)",
       "Bash(npx prisma migrate dev --name add_departments)",
       "Bash(npx prisma generate)",
-      "Bash(npm install @supabase/supabase-js)"
+      "Bash(npm install @supabase/supabase-js)",
+      "Bash(npx prisma migrate dev --name mejoras-folio-cotizaciones-presupuestos-notificaciones)",
+      "Bash(npx prisma db push --accept-data-loss)",
+      "Bash(npm install exceljs @nestjs/websockets @nestjs/platform-socket.io socket.io)",
+      "Bash(npm install socket.io-client)"
     ]
   }
 }

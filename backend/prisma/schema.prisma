@@ -63,6 +63,14 @@ enum EstatusValidacionCFDI {
   ERROR
 }
 
+enum EstatusQuotation {
+  PENDIENTE
+  RESPONDIDA
+  SELECCIONADA
+  VENCIDA
+  CANCELADA
+}
+
 // ─── Tenant ───────────────────────────────────────────────────────────────────
 
 model Tenant {
@@ -85,6 +93,9 @@ model Tenant {
   perfiles         Perfil[]
   deptInventario   DepartmentInventory[]
   deptMovimientos  DepartmentMovement[]
+  quotations       Quotation[]
+  budgets          Budget[]
+  notifications    Notification[]
 }
 
 // ─── Departments ──────────────────────────────────────────────────────────────
@@ -115,6 +126,9 @@ model User {
   activo    Boolean  @default(true)
   creadoEn  DateTime @default(now())
 
+  resetToken       String?   @unique
+  resetTokenExpiry DateTime?
+
   tenant                 Tenant            @relation(fields: [tenantId], references: [id])
   perfil                 Perfil?           @relation(fields: [perfilId], references: [id])
   solicitudes            PurchaseRequest[] @relation("Solicitante")
@@ -122,6 +136,7 @@ model User {
   aprobaciones           ApprovalHistory[]
   flujosComoAprobador    ApprovalFlow[]    @relation("Aprobador")
   flujosComoAlterno      ApprovalFlow[]    @relation("Alterno")
+  notifications          Notification[]
 }
 
 // ─── Perfiles ─────────────────────────────────────────────────────────────────
@@ -153,6 +168,7 @@ model Location {
   inventarios Inventory[]
   solicitudes PurchaseRequest[]
   ordenes     PurchaseOrder[]
+  budgets     Budget[]
 }
 
 // ─── Approval Flows ───────────────────────────────────────────────────────────
@@ -210,6 +226,7 @@ model Product {
   recepcionItems  ReceptionItem[]
   deptInventario  DepartmentInventory[]
   deptMovimientos DepartmentMovement[]
+  quotacionItems  QuotationItem[]
 }
 
 model Inventory {
@@ -251,8 +268,9 @@ model Supplier {
   condicionesPago String?
   activo          Boolean @default(true)
 
-  tenant  Tenant          @relation(fields: [tenantId], references: [id])
-  ordenes PurchaseOrder[]
+  tenant      Tenant          @relation(fields: [tenantId], references: [id])
+  ordenes     PurchaseOrder[]
+  quotations  Quotation[]
 
   @@unique([tenantId, rfc])
 }
@@ -261,6 +279,7 @@ model Supplier {
 
 model PurchaseRequest {
   id            String     @id @default(uuid())
+  folio         Int        @default(autoincrement())
   tenantId      String
   locationId    String
   solicitanteId String
@@ -277,6 +296,7 @@ model PurchaseRequest {
   items       PurchaseRequestItem[]
   historial   ApprovalHistory[]
   ordenes     PurchaseOrder[]
+  quotaciones Quotation[]
 }
 
 model PurchaseRequestItem {
@@ -332,18 +352,20 @@ model PurchaseOrderItem {
 // ─── Invoices (CFDI) ──────────────────────────────────────────────────────────
 
 model Invoice {
-  id                String                @id @default(uuid())
-  ordenId           String
-  folioFiscalUuid   String                @unique
-  xmlUrl            String?
-  pdfUrl            String?
-  fechaEmision      DateTime
-  subtotal          Float
-  iva               Float
-  total             Float
-  estatusValidacion EstatusValidacionCFDI @default(PENDIENTE)
-  notasValidacion   String?
-  creadoEn          DateTime              @default(now())
+  id                 String                @id @default(uuid())
+  ordenId            String
+  folioFiscalUuid    String                @unique
+  xmlUrl             String?
+  pdfUrl             String?
+  fechaEmision       DateTime
+  subtotal           Float
+  iva                Float
+  total              Float
+  estatusValidacion  EstatusValidacionCFDI @default(PENDIENTE)
+  notasValidacion    String?
+  validadoPorSAT     Boolean               @default(false)
+  fechaValidacionSAT DateTime?
+  creadoEn           DateTime              @default(now())
 
   orden       PurchaseOrder @relation(fields: [ordenId], references: [id])
   recepciones Reception[]
@@ -406,4 +428,67 @@ model DepartmentMovement {
   tenant     Tenant     @relation(fields: [tenantId], references: [id])
   department Department @relation(fields: [departmentId], references: [id])
   product    Product    @relation(fields: [productId], references: [id])
+}
+
+// ─── Quotations (Cotizaciones RFQ) ────────────────────────────────────────────
+
+model Quotation {
+  id          String           @id @default(uuid())
+  tenantId    String
+  solicitudId String
+  supplierId  String
+  estatus     EstatusQuotation @default(PENDIENTE)
+  validezDias Int              @default(15)
+  notas       String?
+  creadoEn    DateTime         @default(now())
+
+  tenant    Tenant          @relation(fields: [tenantId], references: [id])
+  solicitud PurchaseRequest @relation(fields: [solicitudId], references: [id])
+  supplier  Supplier        @relation(fields: [supplierId], references: [id])
+  items     QuotationItem[]
+}
+
+model QuotationItem {
+  id                 String    @id @default(uuid())
+  cotizacionId       String
+  productId          String
+  cantidadSolicitada Float
+  precioUnitario     Float?
+  importe            Float?
+
+  cotizacion Quotation @relation(fields: [cotizacionId], references: [id], onDelete: Cascade)
+  product    Product   @relation(fields: [productId], references: [id])
+}
+
+// ─── Budgets (Presupuestos) ────────────────────────────────────────────────────
+
+model Budget {
+  id            String   @id @default(uuid())
+  tenantId      String
+  locationId    String
+  anio          Int
+  mes           Int
+  montoAsignado Float
+  montoEjercido Float    @default(0)
+
+  tenant   Tenant   @relation(fields: [tenantId], references: [id])
+  location Location @relation(fields: [locationId], references: [id])
+
+  @@unique([tenantId, locationId, anio, mes])
+}
+
+// ─── Notifications ────────────────────────────────────────────────────────────
+
+model Notification {
+  id       String   @id @default(uuid())
+  tenantId String
+  userId   String
+  titulo   String
+  mensaje  String
+  leida    Boolean  @default(false)
+  tipo     String   @default("info")
+  creadaEn DateTime @default(now())
+
+  tenant Tenant @relation(fields: [tenantId], references: [id])
+  user   User   @relation(fields: [userId], references: [id])
 }

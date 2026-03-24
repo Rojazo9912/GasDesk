@@ -338,10 +338,19 @@ const DetalleOrden = () => {
           {/* Factura ya registrada */}
           {factura && (
             <div className="p-6 space-y-4">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 <span className={`px-3 py-1 text-xs font-bold rounded-full ${validacionBadge(factura.estatusValidacion)}`}>
                   {factura.estatusValidacion.replace(/_/g, ' ')}
                 </span>
+                {factura.validadoPorSAT ? (
+                  <span className="px-2.5 py-1 text-xs font-bold rounded-full bg-emerald-100 text-emerald-700 border border-emerald-200">
+                    ✓ Verificado SAT
+                  </span>
+                ) : (
+                  <span className="px-2.5 py-1 text-xs font-medium rounded-full bg-slate-100 text-slate-500 border border-slate-200">
+                    Sin verificar SAT
+                  </span>
+                )}
                 {factura.notasValidacion && (
                   <span className="text-sm text-amber-700">{factura.notasValidacion}</span>
                 )}

@@ -1,4 +1,5 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Query, Res } from '@nestjs/common';
+import { Response } from 'express';
 import { ReportsService } from './reports.service';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 
@@ -28,5 +29,42 @@ export class ReportsController {
   @Get('oc-recientes')
   getOCRecientes(@CurrentUser() user: any) {
     return this.reportsService.getOCRecientes(user.tenantId);
+  }
+
+  // ─── Excel exports ────────────────────────────────────────────────────────────
+
+  @Get('gastos-proveedor/xlsx')
+  async getGastosProveedorExcel(
+    @CurrentUser() user: any,
+    @Res() res: Response,
+    @Query('desde') desde?: string,
+    @Query('hasta') hasta?: string,
+  ) {
+    const buffer = await this.reportsService.getGastosProveedorExcel(user.tenantId, desde, hasta);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="gastos-proveedores.xlsx"',
+    });
+    res.send(buffer);
+  }
+
+  @Get('sc-por-estatus/xlsx')
+  async getScPorEstatusExcel(@CurrentUser() user: any, @Res() res: Response) {
+    const buffer = await this.reportsService.getScPorEstatusExcel(user.tenantId);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="sc-por-estatus.xlsx"',
+    });
+    res.send(buffer);
+  }
+
+  @Get('oc-recientes/xlsx')
+  async getOcRecientesExcel(@CurrentUser() user: any, @Res() res: Response) {
+    const buffer = await this.reportsService.getOcRecientesExcel(user.tenantId);
+    res.set({
+      'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'Content-Disposition': 'attachment; filename="oc-recientes.xlsx"',
+    });
+    res.send(buffer);
   }
 }

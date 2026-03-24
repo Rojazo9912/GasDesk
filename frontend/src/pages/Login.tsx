@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate, useLocation, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import api from '../services/api';
 
@@ -84,6 +84,12 @@ const Login = () => {
                   placeholder="••••••••"
                 />
               </div>
+            </div>
+
+            <div className="flex justify-end">
+              <Link to="/forgot-password" className="text-xs text-emerald-600 hover:text-emerald-800 font-medium transition-colors">
+                ¿Olvidaste tu contraseña?
+              </Link>
             </div>
 
             <button
