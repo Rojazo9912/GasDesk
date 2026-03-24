@@ -121,8 +121,7 @@ const DetalleOrden = () => {
         setConfirmModal(null);
         setSending(true);
         try {
-          const fakeUrl = 'https://gasdesk-cloud.com/docs/OC-' + oc.folio + '.pdf';
-          await sendPurchaseOrderEmail(id!, fakeUrl);
+          await sendPurchaseOrderEmail(id!);
           toast.success('¡Órden enviada exitosamente!');
           fetchData();
         } catch (error: any) {
