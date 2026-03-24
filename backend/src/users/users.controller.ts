@@ -5,6 +5,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { Rol } from '@prisma/client';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
+import type { JwtPayload } from '../auth/interfaces/jwt-payload.interface';
 
 @Controller('users')
 export class UsersController {
@@ -12,12 +13,12 @@ export class UsersController {
 
   @Post()
   @Roles(Rol.SUPER_ADMIN, Rol.ADMIN) // Solo admin y super pueden crear usuarios
-  create(@Body() createUserDto: CreateUserDto, @CurrentUser() user: any) {
+  create(@Body() createUserDto: CreateUserDto, @CurrentUser() user: JwtPayload) {
     // el body.tenantId lo podemos sacar de DTO si SUPER_ADMIN crea tenant ajeno.
     // De momento lo pasamos de currentUser:
     return this.usersService.create(
       createUserDto,
-      user.userId,
+      user.sub, // Using sub as userId since it's strongly typed and always present
       user.rol,
       user.tenantId,
       (createUserDto as any).tenantId // solo funcionaría si SUPER_ADMIN lo manda
@@ -26,31 +27,31 @@ export class UsersController {
 
   @Get()
   @Roles(Rol.SUPER_ADMIN, Rol.ADMIN)
-  findAll(@CurrentUser() user: any) {
+  findAll(@CurrentUser() user: JwtPayload) {
     // si es SUPER_ADMIN, trae todos de todos los tenants (si no manda param). 
     // Para simplificar, admins traen solo de su tenant.
-    const tenantFiltrar = user.rol === Rol.SUPER_ADMIN ? null : user.tenantId;
+    const tenantFiltrar = user.rol === Rol.SUPER_ADMIN ? undefined : user.tenantId;
     return this.usersService.findAll(tenantFiltrar);
   }
 
   @Get(':id')
   @Roles(Rol.SUPER_ADMIN, Rol.ADMIN)
-  findOne(@Param('id') id: string, @CurrentUser() user: any) {
-    const tenantFiltrar = user.rol === Rol.SUPER_ADMIN ? null : user.tenantId;
+  findOne(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    const tenantFiltrar = user.rol === Rol.SUPER_ADMIN ? undefined : user.tenantId;
     return this.usersService.findOne(id, tenantFiltrar);
   }
 
   @Patch(':id')
   @Roles(Rol.SUPER_ADMIN, Rol.ADMIN)
-  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @CurrentUser() user: any) {
-    const tenantFiltrar = user.rol === Rol.SUPER_ADMIN ? null : user.tenantId;
+  update(@Param('id') id: string, @Body() updateUserDto: UpdateUserDto, @CurrentUser() user: JwtPayload) {
+    const tenantFiltrar = user.rol === Rol.SUPER_ADMIN ? undefined : user.tenantId;
     return this.usersService.update(id, updateUserDto, tenantFiltrar);
   }
 
   @Delete(':id')
   @Roles(Rol.SUPER_ADMIN, Rol.ADMIN)
-  remove(@Param('id') id: string, @CurrentUser() user: any) {
-    const tenantFiltrar = user.rol === Rol.SUPER_ADMIN ? null : user.tenantId;
+  remove(@Param('id') id: string, @CurrentUser() user: JwtPayload) {
+    const tenantFiltrar = user.rol === Rol.SUPER_ADMIN ? undefined : user.tenantId;
     return this.usersService.remove(id, tenantFiltrar);
   }
 }

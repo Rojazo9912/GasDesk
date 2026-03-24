@@ -183,7 +183,9 @@ const UsuariosList = () => {
                     type="button"
                     onClick={() => {
                       const chars = 'abcdefghijkmnpqrstuvwxyzABCDEFGHJKLMNPQRSTUVWXYZ23456789@#$!';
-                      const pwd = Array.from({ length: 12 }, () => chars[Math.floor(Math.random() * chars.length)]).join('');
+                      const randomArray = new Uint32Array(12);
+                      window.crypto.getRandomValues(randomArray);
+                      const pwd = Array.from(randomArray, (num) => chars[num % chars.length]).join('');
                       setPassword(pwd);
                       setShowPassword(true);
                     }}

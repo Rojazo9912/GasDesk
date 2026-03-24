@@ -1,18 +1,33 @@
 import api from './api';
 
 export const getTenant = async (id: string) => {
-  const { data } = await api.get(`/tenants/${id}`);
-  return data;
+  try {
+    const { data } = await api.get(`/tenants/${id}`);
+    return data;
+  } catch (error) {
+    console.error(`Error fetching tenant ${id}:`, error);
+    throw error;
+  }
 };
 
 export const updateTenant = async (id: string, updateData: any) => {
-  const { data } = await api.patch(`/tenants/${id}`, updateData);
-  return data;
+  try {
+    const { data } = await api.patch(`/tenants/${id}`, updateData);
+    return data;
+  } catch (error) {
+    console.error(`Error updating tenant ${id}:`, error);
+    throw error;
+  }
 };
 
 export const getTenants = async () => {
-  const { data } = await api.get('/tenants');
-  return data;
+  try {
+    const { data } = await api.get('/tenants');
+    return data;
+  } catch (error) {
+    console.error('Error fetching tenants:', error);
+    throw error;
+  }
 };
 
 export const createTenant = async (dto: {
@@ -21,6 +36,11 @@ export const createTenant = async (dto: {
   plan?: string;
   adminUser: { nombre: string; email: string; password: string };
 }) => {
-  const { data } = await api.post('/tenants', dto);
-  return data;
+  try {
+    const { data } = await api.post('/tenants', dto);
+    return data;
+  } catch (error) {
+    console.error('Error creating tenant:', error);
+    throw error;
+  }
 };
